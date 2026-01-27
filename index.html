@@ -6,28 +6,24 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
-<body style="margin:0; background:black;">
+<body style="margin:0; overflow: hidden; background:black;">
 
-<a-scene embedded>
+<a-scene background="color: black">
 
-  <!-- IŞIKLAR (EN ÖNEMLİ KISIM) -->
-  <a-light type="ambient" color="#FFFFFF" intensity="1"></a-light>
+  <a-light type="ambient" color="#FFFFFF" intensity="0.5"></a-light>
   <a-light type="directional" position="1 1 1" intensity="1"></a-light>
 
-  <!-- MODEL -->
   <a-assets>
     <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
   </a-assets>
 
   <a-entity
     gltf-model="#kupu"
-    position="0 0 -3"
+    position="0 1.6 -3" 
     scale="1 1 1"
-    animation="property: rotation; to: 0 360 0; loop: true; dur: 9000">
+    animation="property: rotation; to: 0 360 0; loop: true; dur: 9000; easing: linear">
   </a-entity>
-
-  <!-- KAMERA -->
-  <a-camera></a-camera>
+  <a-camera position="0 1.6 0"></a-camera>
 
 </a-scene>
 
