@@ -9,7 +9,12 @@
 <body style="margin:0; background:black;">
 
 <a-scene embedded>
-  
+
+  <!-- IŞIKLAR (EN ÖNEMLİ KISIM) -->
+  <a-light type="ambient" color="#FFFFFF" intensity="1"></a-light>
+  <a-light type="directional" position="1 1 1" intensity="1"></a-light>
+
+  <!-- MODEL -->
   <a-assets>
     <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
   </a-assets>
@@ -21,6 +26,7 @@
     animation="property: rotation; to: 0 360 0; loop: true; dur: 9000">
   </a-entity>
 
+  <!-- KAMERA -->
   <a-camera></a-camera>
 
 </a-scene>
