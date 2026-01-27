@@ -1,26 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
   <meta charset="utf-8">
-  <title>AR Test</title>
+  <title>Bilişim Eğitimi AR</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 </head>
 
-<body style="margin:0;">
+<body style="margin:0; background:black;">
 
 <a-scene embedded>
+  
   <a-assets>
-    <a-asset-item id="model" src="kupu.glb"></a-asset-item>
+    <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
   </a-assets>
 
-  <a-entity 
-    gltf-model="#model"
+  <a-entity
+    gltf-model="#kupu"
     position="0 0 -3"
     scale="1 1 1"
-    animation="property: rotation; to: 0 360 0; loop: true; dur: 8000">
+    animation="property: rotation; to: 0 360 0; loop: true; dur: 9000">
   </a-entity>
 
   <a-camera></a-camera>
+
 </a-scene>
 
 </body>
