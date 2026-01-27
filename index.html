@@ -3,127 +3,80 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bilişim Küpü (Final Sürüm)</title>
-    
+    <title>Bilişim Küpü Pro</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
-        // =================================================================
-        // BÖLÜM 1: CİHAZ ALGILAMA VE KONUMLANDIRMA (EN KRİTİK KISIM)
-        // =================================================================
+        // GLOBAL DEĞİŞKENLER (Ölçek yönetimi için)
+        var baseScale = { x: 0.5, y: 0.5, z: 0.5 }; // Varsayılan PC boyutu
+
+        // --- 1. MOBİL VE GENEL AYARLAR ---
         AFRAME.registerComponent('mobil-ayar', {
             init: function () {
-                // Ekran genişliği 768px'den küçükse "Mobil" kabul ediyoruz.
                 var isMobile = window.matchMedia("(max-width: 768px)").matches;
-                
                 var kamera = document.querySelector('#ana-kamera');
-                var model = document.querySelector('#kafes-sistemi'); // Küpümüz
+                var model = document.querySelector('#kafes-sistemi');
 
                 if (isMobile) {
-                    // --- MOBİL TELEFON AYARLARI ---
-                    // Amaç: AR'da gerçekçi dursun ama Web'de büyük görünsün.
-
-                    // 1. BOYUT (SCALE): 0.3 = 30 cm. 
-                    // AR modunda odaya koyduğumuzda dev gibi bina gibi durmasın, masa üstü obje gibi dursun.
-                    model.setAttribute('scale', '0.3 0.3 0.3');
-
-                    // 2. MODEL KONUMU (POSITION):
-                    // Y=1.3: Yerden 1.3 metre yukarıda (İnsan göğüs hizası).
-                    // Z=-1.5: Telefondan 1.5 metre ileride.
+                    // MOBİL AYARLARI
+                    baseScale = { x: 0.3, y: 0.3, z: 0.3 }; // Mobilde temel boyut 0.3
+                    model.setAttribute('scale', baseScale);
                     model.setAttribute('position', '0 1.3 -1.5');
-
-                    // 3. KAMERA KONUMU:
-                    // Küpü küçülttüğümüz (0.3) için web ekranında pire gibi görünür.
-                    // Bu yüzden kamerayı Z=-0.5 yaparak küpün BİTİBİNE sokuyoruz.
-                    // Böylece ekranda kocaman, AR'da ise normal görünüyor.
                     kamera.setAttribute('position', '0 1.3 -0.5');
-                    
                 } else {
-                    // --- BİLGİSAYAR (MASAÜSTÜ) AYARLARI ---
-                    // PC ekranı geniş, uzaktan bakmak daha estetik.
-                    model.setAttribute('scale', '0.5 0.5 0.5'); // Daha büyük model
-                    model.setAttribute('position', '0 0 0');     // Merkezde
-                    kamera.setAttribute('position', '0 0 4');    // 4 Metre uzaktan bakış
+                    // PC AYARLARI
+                    baseScale = { x: 0.5, y: 0.5, z: 0.5 }; // PC'de temel boyut 0.5
+                    model.setAttribute('scale', baseScale);
+                    model.setAttribute('position', '0 0 0');
+                    kamera.setAttribute('position', '0 0 4');
                 }
             }
         });
 
-        // =================================================================
-        // BÖLÜM 2: DÖNDÜRME MOTORU (MOUSE & DOKUNMATİK)
-        // =================================================================
+        // --- 2. DÖNDÜRME MOTORU ---
         AFRAME.registerComponent('akilli-kontrol', {
             schema: { speed: { default: 2.0 }, friction: { default: 0.95 } },
             init: function () {
                 this.ifMouseDown = false;
-                this.startX = 0;
-                this.startY = 0;
-                this.lastX = 0;
-                this.lastY = 0;
-                this.velocityX = 0; // Fırıldak etkisi için hız hafızası
-                this.velocityY = 0;
-                this.autoRotate = true; // Sayfa açılınca otomatik dönsün mü?
+                this.startX = 0; this.startY = 0;
+                this.lastX = 0; this.lastY = 0;
+                this.velocityX = 0; this.velocityY = 0;
+                this.autoRotate = true; 
 
-                // Olay Dinleyicilerini (Event Listeners) bağlıyoruz
                 this.onStart = this.onStart.bind(this);
                 this.onEnd = this.onEnd.bind(this);
                 this.onMove = this.onMove.bind(this);
 
-                // Hem Fare (Mouse) hem Parmak (Touch) desteği
                 document.addEventListener('mousedown', this.onStart);
-                document.addEventListener('touchstart', (e) => this.onStart(e.touches[0]), {passive: false}); // passive: false -> Sayfa kaymasını engeller
-                
+                document.addEventListener('touchstart', (e) => this.onStart(e.touches[0]), {passive: false});
                 document.addEventListener('mouseup', this.onEnd);
                 document.addEventListener('touchend', this.onEnd);
-                
                 document.addEventListener('mousemove', this.onMove);
                 document.addEventListener('touchmove', (e) => this.onMove(e.touches[0]), {passive: false});
             },
-
-            // Dokunma Başladı
             onStart: function (e) {
-                // Eğer kullanıcı menüye (modal) veya başlığa basıyorsa küpü döndürme!
                 if(e.target && e.target.closest && (e.target.closest('.modal') || e.target.closest('.header'))) return;
-
-                this.autoRotate = false; // Kullanıcı dokunduğu an otomatik dönmeyi durdur
+                this.autoRotate = false;
                 this.ifMouseDown = true;
-                this.startX = e.clientX;
-                this.startY = e.clientY;
-                this.lastX = e.clientX;
-                this.lastY = e.clientY;
-                this.velocityX = 0; // Tutunca durdur
-                this.velocityY = 0;
+                this.startX = e.clientX; this.startY = e.clientY;
+                this.lastX = e.clientX; this.lastY = e.clientY;
+                this.velocityX = 0; this.velocityY = 0;
             },
-
-            // Sürükleme Anı
             onMove: function (e) {
                 if (this.ifMouseDown) {
-                    var currentX = e.clientX;
-                    var currentY = e.clientY;
-                    var deltaX = currentX - this.lastX; // Ne kadar hareket etti?
-                    var deltaY = currentY - this.lastY;
-
-                    // Hızı hesapla (250 sayısı hassasiyet ayarıdır)
+                    var currentX = e.clientX; var currentY = e.clientY;
+                    var deltaX = currentX - this.lastX; var deltaY = currentY - this.lastY;
                     this.velocityY = deltaX * this.data.speed / 250; 
                     this.velocityX = deltaY * this.data.speed / 250;
-
-                    this.lastX = currentX;
-                    this.lastY = currentY;
+                    this.lastX = currentX; this.lastY = currentY;
                 }
             },
-
-            // Dokunma Bitti
             onEnd: function () { this.ifMouseDown = false; },
-
-            // Her karede (frame) çalışır: Animasyon
             tick: function () {
                 if (!this.ifMouseDown) {
-                    if(this.autoRotate) { 
-                        // Otomatik Dönüş (Vitrin Modu)
-                        this.el.object3D.rotation.y += 0.003; 
-                    } 
+                    if(this.autoRotate) { this.el.object3D.rotation.y += 0.003; } 
                     else {
-                        // Eylemsizlik (Sürtünme ile yavaşça durma)
                         this.velocityX *= this.data.friction;
                         this.velocityY *= this.data.friction;
                         this.el.object3D.rotation.y += this.velocityY;
@@ -133,53 +86,61 @@
             }
         });
 
-        // =================================================================
-        // BÖLÜM 3: TIKLAMA VE BİLGİ PENCERESİ AÇMA
-        // =================================================================
+        // --- 3. TIKLAMA, TİTREŞİM VE PARLAMA EFEKTİ (YENİ) ---
         AFRAME.registerComponent('tiklama-efekti', {
             init: function () {
                 var el = this.el; // Tıklanan yüzey
+                
                 el.addEventListener('click', function (evt) {
-                    // HTML'deki 'data-modal="modal-1"' bilgisini okur
+                    
+                    // A) TİTREŞİM (HAPTIC FEEDBACK)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50); // 50 milisaniye titret
+                    }
+
+                    // B) PARLAMA EFEKTİ (FLASH)
+                    // Opaklığı aniden artırıp yavaşça düşürüyoruz
+                    el.setAttribute('animation__flash', {
+                        property: 'material.opacity',
+                        from: 0.6,  // Parlak
+                        to: 0.01,   // Görünmez
+                        dur: 300,   // 0.3 saniye sürsün
+                        easing: 'easeOutQuad'
+                    });
+
+                    // C) MODAL AÇMA VE KÜP KÜÇÜLTME
                     var hedefModal = el.getAttribute('data-modal');
-                    modalAc(hedefModal); // O pencereyi açar
+                    modalAc(hedefModal);
                 });
             }
         });
     </script>
 
     <style>
-        /* CSS / GÖRSEL TASARIM */
-        
-        /* Sayfa kaymasını engellemek için touch-action: none ve overflow: hidden şart */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; font-family: 'Segoe UI', sans-serif; }
-        
-        /* Arayüz Katmanı (UI Layer) */
-        /* pointer-events: none sayesinde bu katmanın arkasındaki 3D küpe dokunabiliyoruz */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%); }
 
-        /* Başlık Yazıları */
-        .header { text-align: center; margin-top: 50px; pointer-events: none; }
+        .header { text-align: center; margin-top: 50px; pointer-events: none; transition: 0.3s; }
         .header h1 { margin: 0; font-size: 2.2rem; color: #fff; text-shadow: 0 2px 10px #000; }
         .header p { color: #ff9f43; margin-top: 5px; font-size: 1.1rem; font-weight: bold; }
 
-        /* Modal (Bilgi Penceresi) Tasarımı */
+        /* MODAL GÖRÜNÜMÜ */
         .modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
             width: 90%; max-width: 400px; 
-            background: rgba(20, 25, 30, 0.95); /* Koyu Yarı Saydam Arkaplan */
+            background: rgba(20, 25, 30, 0.95);
             border: 2px solid rgba(255, 159, 67, 0.6); 
             border-radius: 20px; padding: 30px; 
-            color: white; display: none; opacity: 0; 
-            pointer-events: auto; /* Pencereye tıklanabilsin */
-            z-index: 20; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.8); transition: 0.2s;
+            color: white; display: none; opacity: 0; pointer-events: auto; z-index: 20; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        
         .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
         .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 15px; font-size: 1.6rem; }
         .modal ul { padding-left: 20px; color: #ccc; font-size: 1.1rem; line-height: 1.6; }
         .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
+        
+        /* Modal açılınca başlığı biraz silikleştirelim */
+        body.modal-open .header { opacity: 0.2; }
     </style>
 </head>
 
@@ -213,12 +174,12 @@
             
             <a-entity gltf-model="#kupu" position="0 -0.2 0"></a-entity>
 
-            <a-plane class="tiklanabilir" data-modal="modal-1" tiklama-efekti position="0 0 0.51" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
-            <a-plane class="tiklanabilir" data-modal="modal-2" tiklama-efekti position="0.51 0 0" rotation="0 90 0" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
-            <a-plane class="tiklanabilir" data-modal="modal-3" tiklama-efekti position="0 0 -0.51" rotation="0 180 0" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
-            <a-plane class="tiklanabilir" data-modal="modal-4" tiklama-efekti position="-0.51 0 0" rotation="0 -90 0" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
-            <a-plane class="tiklanabilir" data-modal="modal-5" tiklama-efekti position="0 0.51 0" rotation="-90 0 0" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
-            <a-plane class="tiklanabilir" data-modal="modal-6" tiklama-efekti position="0 -0.51 0" rotation="90 0 0" width="1" height="1" material="opacity: 0.01; transparent: true"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-1" tiklama-efekti position="0 0 0.51" width="1" height="1" material="opacity: 0.01; transparent: true; color: #ff4757"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-2" tiklama-efekti position="0.51 0 0" rotation="0 90 0" width="1" height="1" material="opacity: 0.01; transparent: true; color: #3742fa"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-3" tiklama-efekti position="0 0 -0.51" rotation="0 180 0" width="1" height="1" material="opacity: 0.01; transparent: true; color: #2ed573"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-4" tiklama-efekti position="-0.51 0 0" rotation="0 -90 0" width="1" height="1" material="opacity: 0.01; transparent: true; color: #ffa502"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-5" tiklama-efekti position="0 0.51 0" rotation="-90 0 0" width="1" height="1" material="opacity: 0.01; transparent: true; color: #ff6348"></a-plane>
+            <a-plane class="tiklanabilir" data-modal="modal-6" tiklama-efekti position="0 -0.51 0" rotation="90 0 0" width="1" height="1" material="opacity: 0.01; transparent: true; color: #5352ed"></a-plane>
 
         </a-entity>
 
@@ -227,9 +188,48 @@
     </a-scene>
 
     <script>
-        // Modal Açma/Kapama Fonksiyonları
-        function modalKapat() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif')); }
-        function modalAc(id) { modalKapat(); document.getElementById(id).classList.add('aktif'); }
+        // MODAL AÇILINCA KÜP DAVRANIŞI
+        function modalAc(id) {
+            // 1. Modalı Aç
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
+            document.getElementById(id).classList.add('aktif');
+            document.body.classList.add('modal-open');
+
+            // 2. Küpü "Odak Dışı" Bırak (Küçült)
+            // Mevcut scale'i (baseScale) alıp 0.8 ile çarpıyoruz
+            var wrapper = document.querySelector('#kafes-sistemi');
+            var targetScale = {
+                x: baseScale.x * 0.8,
+                y: baseScale.y * 0.8,
+                z: baseScale.z * 0.8
+            };
+
+            // Animasyonla küçült
+            wrapper.setAttribute('animation__shrink', {
+                property: 'scale',
+                to: targetScale.x + ' ' + targetScale.y + ' ' + targetScale.z,
+                dur: 500,
+                easing: 'easeOutExpo'
+            });
+        }
+
+        // MODAL KAPANINCA KÜP DAVRANIŞI
+        function modalKapat() {
+            // 1. Modalı Kapat
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
+            document.body.classList.remove('modal-open');
+
+            // 2. Küpü Eski Haline Getir (Büyüt)
+            var wrapper = document.querySelector('#kafes-sistemi');
+            
+            // Animasyonla eski boyutuna (baseScale) getir
+            wrapper.setAttribute('animation__restore', {
+                property: 'scale',
+                to: baseScale.x + ' ' + baseScale.y + ' ' + baseScale.z,
+                dur: 500,
+                easing: 'easeOutElastic' // Yaylanarak geri gelsin
+            });
+        }
     </script>
 </body>
 </html>
