@@ -8,31 +8,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- ARAYÜZ TASARIMI (UI) --- */
+        /* --- CSS AYARLARI --- */
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
-        /* Ana Katman (Tüm butonlar burada) */
+        /* Ana Katman */
         #ui-layer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10;
-            pointer-events: none; /* Boşluklara tıklayınca arkadaki 3D sahneye geçsin */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             padding: 20px;
             box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2), rgba(0,0,0,0.9));
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+            
+            /* KRİTİK AYAR: Bu katmana dokunulamaz, dokunuşlar arkaya geçer */
+            pointer-events: none; 
         }
 
         /* Başlık */
         .header {
             text-align: center;
             color: white;
-            pointer-events: auto;
             margin-top: 20px;
+            /* Başlığa da dokunulamaz, arkasındaki sahne dönsün */
+            pointer-events: none; 
         }
-        .header h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: #ff9f43; }
+        .header h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: #ff9f43; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .header p { margin: 5px 0; font-size: 0.8rem; color: #aaa; }
 
         /* Menü Izgarası */
@@ -41,7 +44,8 @@
             grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-bottom: 30px;
-            pointer-events: auto;
+            /* Izgara kutusunun kendisine dokunulamaz, aralardan dokunuş geçsin */
+            pointer-events: none; 
         }
 
         /* Menü Butonları */
@@ -59,13 +63,16 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
+            
+            /* SADECE BUTONLAR TIKLANABİLİR OLSUN */
+            pointer-events: auto; 
         }
 
         .menu-btn:active { transform: scale(0.95); background: rgba(255, 159, 67, 0.2); }
         .menu-btn i { font-size: 1.5rem; color: #ff9f43; }
         .menu-btn span { font-size: 0.9rem; font-weight: bold; }
 
-        /* Bilgi Kartları (Modal - Başlangıçta Gizli) */
+        /* Modal Pencereler */
         .modal {
             position: absolute;
             top: 50%; left: 50%;
@@ -77,20 +84,18 @@
             border-radius: 15px;
             padding: 25px;
             color: white;
-            display: none; /* Gizli */
+            display: none; 
             opacity: 0;
-            pointer-events: auto;
+            
+            /* Modal açılınca ona dokunabilelim */
+            pointer-events: auto; 
+            
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
             transition: 0.3s;
             z-index: 20;
         }
 
-        .modal.aktif {
-            display: block;
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
+        .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
         .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .modal ul { padding-left: 20px; line-height: 1.6; color: #ccc; font-size: 0.9rem; }
         
@@ -105,14 +110,12 @@
             font-weight: bold;
             cursor: pointer;
         }
-
     </style>
 </head>
 
 <body>
 
     <div id="ui-layer">
-        
         <div class="header">
             <h1>Eğitmen Portalı</h1>
             <p>Bilişim & Maker Kültürü</p>
@@ -136,15 +139,14 @@
                 <span>Hackoutlon</span>
             </div>
         </div>
-
     </div>
 
     <div id="modal-maker" class="modal">
         <h2>🧊 Tasarım ve Üretim</h2>
         <ul>
-            <li><b>Tinkercad:</b> Basit geometrik şekillerle modelleme.</li>
-            <li><b>3D Kalem:</b> Yaratıcılığı somutlaştıran ilk adım.</li>
-            <li><b>Fusion 360:</b> İleri seviye parametrik tasarım.</li>
+            <li><b>Tinkercad:</b> Basit geometrik modelleme.</li>
+            <li><b>3D Kalem:</b> Somutlaştırma atölyesi.</li>
+            <li><b>Fusion 360:</b> Parametrik tasarım.</li>
         </ul>
         <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
     </div>
@@ -152,9 +154,9 @@
     <div id="modal-robot" class="modal">
         <h2>🤖 Robotik & IoT</h2>
         <ul>
-            <li><b>Arduino:</b> Sensörler ve aktüatörlerle fiziksel kodlama.</li>
-            <li><b>VEX Robotics:</b> Turnuva odaklı robot mekaniği.</li>
-            <li><b>Akıllı Ev:</b> IoT sistemleri ve otomasyon temelleri.</li>
+            <li><b>Arduino:</b> Sensörler ve kodlama.</li>
+            <li><b>VEX IQ:</b> Robot mekaniği.</li>
+            <li><b>IoT:</b> Akıllı ev sistemleri.</li>
         </ul>
         <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
     </div>
@@ -162,9 +164,9 @@
     <div id="modal-code" class="modal">
         <h2>💻 Yazılım Geliştirme</h2>
         <ul>
-            <li><b>Python:</b> Yapay zeka ve veri işleme.</li>
-            <li><b>Unity:</b> Oyun geliştirme ve VR dünyaları.</li>
-            <li><b>Mobil:</b> App Inventor ile uygulama geliştirme.</li>
+            <li><b>Python:</b> Yapay zeka temelleri.</li>
+            <li><b>Unity:</b> Oyun ve simülasyon.</li>
+            <li><b>Mobil:</b> App Inventor.</li>
         </ul>
         <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
     </div>
@@ -173,22 +175,21 @@
         <h2>🏆 Hackoutlon</h2>
         <p>Kodlama ve Yaratıcılık Maratonu!</p>
         <ul>
-            <li>Takım kurma ve fikir geliştirme.</li>
-            <li>Sınırlı sürede prototip üretimi.</li>
-            <li>Jüri sunumu ve ödül töreni.</li>
+            <li>Takım kurma ve fikir.</li>
+            <li>Prototip geliştirme.</li>
+            <li>Jüri sunumu.</li>
         </ul>
         <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
     </div>
 
-
     <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
-
+        
         <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
         <a-light type="directional" position="2 4 3" intensity="1"></a-light>
         <a-light type="point" position="-2 2 2" intensity="0.8" color="#ff9f43" distance="10"></a-light>
 
         <a-assets>
-            <a-asset-item id="kupu" src="egitim_kupu_kucuk.glb"></a-asset-item>
+            <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
         </a-assets>
 
         <a-entity 
@@ -200,26 +201,22 @@
             animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
         </a-entity>
 
-        <a-camera position="0 1.6 0"></a-camera>
+        <a-camera position="0 1.6 0" look-controls="enabled: true"></a-camera>
 
     </a-scene>
 
     <script>
-        // Tüm modalları kapatan fonksiyon
         function modalKapat() {
-            const modallar = document.querySelectorAll('.modal');
-            modallar.forEach(m => m.classList.remove('aktif'));
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
         }
-
-        // İlgili modalı açan fonksiyon
         function modalAc(id) {
-            modalKapat(); // Önce açık olan varsa kapat
+            modalKapat();
             document.getElementById(id).classList.add('aktif');
         }
-
-        // 3D Küpe tıklanınca rastgele bir menü açsın (Eğlence)
+        
+        // Küpe tıklayınca da Hackoutlon açsın (Örnek etkileşim)
         document.querySelector('#nesne').addEventListener('click', function() {
-            modalAc('modal-hack'); // Örnek olarak Hackoutlon'u açar
+            modalAc('modal-hack');
         });
     </script>
 
