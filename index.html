@@ -8,44 +8,46 @@
 
 <body style="margin:0; overflow:hidden; background:black;">
 
-<!-- ALTTAN ÇIKACAK YAZI -->
 <div id="bilgi"
      style="
        position: fixed;
        bottom: 20px;
        left: 50%;
        transform: translateX(-50%);
-       background: rgba(0,0,0,0.75);
+       background: rgba(255, 255, 255, 0.1);
+       backdrop-filter: blur(10px);
+       border: 1px solid rgba(255,255,255,0.2);
        color: white;
-       padding: 14px 20px;
-       border-radius: 12px;
-       font-family: Arial;
+       padding: 20px 30px;
+       border-radius: 20px;
+       font-family: 'Segoe UI', sans-serif;
        display: none;
-       z-index: 10;
+       z-index: 9999;
        text-align: center;
+       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+       min-width: 200px;
      ">
-  👋 Bu eğitimde<br>
+  <h3 style="margin:0 0 5px 0; color:#ff9f43;">Tebrikler! 🚀</h3>
+  Bu eğitimde<br>
   <b>AR – VR – Maker – 3D Tasarım</b><br>
   birlikte üretilecek.
 </div>
 
-<a-scene background="color: black">
+<a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
 
-  <!-- IŞIK -->
   <a-light type="ambient" color="#FFFFFF" intensity="0.5"></a-light>
   <a-light type="directional" position="1 1 1" intensity="1"></a-light>
 
-  <!-- MODEL -->
   <a-assets>
     <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
   </a-assets>
 
-  <!-- TIKLANABİLİR KÜP -->
   <a-entity
     id="kupuEntity"
+    class="tiklanabilir"
     gltf-model="#kupu"
-    position="0 1 -70"
-    scale="0.1 0.1 0.1"
+    position="0 1 -4"
+    scale="0.5 0.5 0.5"
     animation="property: rotation; to: 0 360 0; loop: true; dur: 9000; easing: linear">
   </a-entity>
 
@@ -57,8 +59,13 @@
   const kupu = document.querySelector('#kupuEntity');
   const bilgi = document.getElementById('bilgi');
 
-  kupu.addEventListener('click', () => {
+  // Küpe tıklandığında (veya dokunulduğunda) çalışır
+  kupu.addEventListener('click', function () {
+    // Yazıyı görünür yap
     bilgi.style.display = 'block';
+    
+    // İsteğe bağlı: Tıklandığını belli etmek için küpü biraz büyütüp küçültelim
+    kupu.setAttribute('animation__click', 'property: scale; from: 0.6 0.6 0.6; to: 0.5 0.5 0.5; dur: 200; easing: easeOutQuad');
   });
 </script>
 
