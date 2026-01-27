@@ -8,25 +8,37 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
-        // --- 1. MOBİL AYARLAR (YENİLENMİŞ) ---
+        // --- 1. HASSAS KONUM AYARLAYICI ---
         AFRAME.registerComponent('mobil-ayar', {
             init: function () {
                 var isMobile = window.matchMedia("(max-width: 768px)").matches;
+                
+                var kamera = document.querySelector('#ana-kamera');
+                var model = document.querySelector('#kafes-sistemi');
 
                 if (isMobile) {
-                    var kamera = document.querySelector('#ana-kamera');
-                    var model = document.querySelector('#kafes-sistemi');
-
-                    // AYAR 1: "Biraz daha ileride başlasın"
-                    // Kamerayı 3.8'den 5.5'e çektim. (Sayı büyüdükçe uzaklaşır)
-                    kamera.setAttribute('position', '0 0 8');
+                    // --- MOBİL WEB AYARLARI ---
                     
-                    // AYAR 2: "Biraz Yükselt"
-                    // Y değerini 0.4 yaptım. (Yukarı kalktı)
-                    model.setAttribute('position', '0 0.9 0');
+                    // 1. KÜPÜN BOYUTU (AR İÇİN KÜÇÜK OLMALI)
+                    // 0.3 = 30 cm. AR'da masa üstü obje gibi durur, dev gibi olmaz.
+                    model.setAttribute('scale', '0.3 0.3 0.3');
 
-                    // Uzaklaştırdığımız için küp çok küçük kalmasın diye boyutu artırdım
-                    model.setAttribute('scale', '0.2 0.2 0.2');
+                    // 2. KÜPÜN KONUMU (AR'DA YERDE SÜRÜNMESİN)
+                    // Y=1.3: Yerden 1.3 metre yukarıda (Göğüs hizası)
+                    // Z=-1.5: Telefondan 1.5 metre ileride başlasın
+                    model.setAttribute('position', '0 1.3 -1.5');
+
+                    // 3. KAMERA (WEB'DE BÜYÜK GÖRÜNSÜN)
+                    // Küpü küçülttük (0.3), o yüzden kamerayı ona ÇOK yaklaştırıyoruz.
+                    // Z=-0.5 yaparak kamerayı küpün 1 metre yakınına sokuyoruz.
+                    kamera.setAttribute('position', '0 1.3 -0.5');
+                    
+                } else {
+                    // --- BİLGİSAYAR AYARLARI (MASAÜSTÜ) ---
+                    // PC ekranı geniş olduğu için daha uzaktan bakabiliriz.
+                    model.setAttribute('scale', '0.5 0.5 0.5');
+                    model.setAttribute('position', '0 0 0');
+                    kamera.setAttribute('position', '0 0 4');
                 }
             }
         });
@@ -38,6 +50,8 @@
                 this.ifMouseDown = false;
                 this.startX = 0;
                 this.startY = 0;
+                this.lastX = 0;
+                this.lastY = 0;
                 this.velocityX = 0;
                 this.velocityY = 0;
                 this.autoRotate = true; 
@@ -108,52 +122,27 @@
     <style>
         /* TEMEL AYARLAR */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; font-family: 'Segoe UI', sans-serif; }
-        
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%); }
 
         /* MOBİL İÇİN BÜYÜTÜLMÜŞ YAZILAR */
         .header { text-align: center; margin-top: 50px; pointer-events: none; }
-        .header h1 { 
-            margin: 0; 
-            font-size: 2.2rem; /* Yazı Büyütüldü (Eskisi 1.8) */
-            color: #fff; text-shadow: 0 2px 10px #000; 
-        }
-        .header p { 
-            color: #ff9f43; margin-top: 5px; 
-            font-size: 1.1rem; /* Yazı Büyütüldü (Eskisi 0.9) */
-            font-weight: bold;
-        }
+        .header h1 { margin: 0; font-size: 2.2rem; color: #fff; text-shadow: 0 2px 10px #000; }
+        .header p { color: #ff9f43; margin-top: 5px; font-size: 1.1rem; font-weight: bold; }
 
-        /* MODAL PENCERE (BÜYÜTÜLDÜ) */
+        /* MODAL PENCERE */
         .modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 90%; /* Genişlik artırıldı */
-            max-width: 400px; 
+            width: 90%; max-width: 400px; 
             background: rgba(20, 25, 30, 0.95);
-            border: 2px solid rgba(255, 159, 67, 0.6); /* Çerçeve kalınlaştı */
-            border-radius: 20px; 
-            padding: 30px; /* İç boşluk artırıldı */
+            border: 2px solid rgba(255, 159, 67, 0.6); 
+            border-radius: 20px; padding: 30px; 
             color: white; display: none; opacity: 0; pointer-events: auto; z-index: 20; 
             box-shadow: 0 0 50px rgba(0,0,0,0.8); transition: 0.2s;
         }
         .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        
-        .modal h2 { 
-            margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 15px; 
-            font-size: 1.6rem; /* Başlık Büyütüldü */
-        }
-        .modal ul { 
-            padding-left: 20px; color: #ccc; 
-            font-size: 1.1rem; /* Liste yazıları Büyütüldü */
-            line-height: 1.6; 
-        }
-        
-        .kapat-btn { 
-            background: #ff4757; color: white; border: none; width: 100%; 
-            padding: 18px; /* Buton büyütüldü (Dokunması kolay) */
-            border-radius: 12px; font-weight: bold; font-size: 1.1rem; 
-            margin-top: 20px; cursor: pointer; 
-        }
+        .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 15px; font-size: 1.6rem; }
+        .modal ul { padding-left: 20px; color: #ccc; font-size: 1.1rem; line-height: 1.6; }
+        .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 
@@ -175,7 +164,7 @@
 
     <a-scene background="color: #050505" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir" mobil-ayar>
         
-        <a-light type="ambient" intensity="1"></a-light>
+        <a-light type="ambient" intensity="1.2"></a-light>
         <a-light type="directional" position="1 2 3" intensity="1.5"></a-light>
         <a-light type="point" position="-2 1 2" color="#ff9f43" intensity="0.8"></a-light>
 
@@ -196,7 +185,7 @@
 
         </a-entity>
 
-        <a-camera id="ana-kamera" position="0 0 5" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+        <a-camera id="ana-kamera" position="0 0 4" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
 
     </a-scene>
 
