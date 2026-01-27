@@ -2,14 +2,12 @@
 <html lang="tr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Akıllı Küp Menü</title>
+    <title>Yüzey Numaralandırma Testi</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        // --- GELİŞMİŞ KONTROL SİSTEMİ ---
-        AFRAME.registerComponent('akilli-kontrol', {
+        // Sadece döndürme kontrolü (Sürükle bırak)
+        AFRAME.registerComponent('kontrol', {
             schema: { speed: { default: 2.5 }, friction: { default: 0.95 } },
             init: function () {
                 this.ifMouseDown = false;
@@ -17,228 +15,86 @@
                 this.y_cord = 0;
                 this.velocityX = 0;
                 this.velocityY = 0;
-                this.startX = 0;
-                this.startY = 0;
-                this.isDragging = false; 
-                
-                // ÖZELLİK 1: Sayfa açılınca otomatik dönsün
-                this.autoRotate = true; 
-
-                this.onStart = this.onStart.bind(this);
-                this.onEnd = this.onEnd.bind(this);
-                this.onMove = this.onMove.bind(this);
-
-                document.addEventListener('mousedown', this.onStart);
-                document.addEventListener('touchstart', (e) => this.onStart(e.touches[0]));
-                document.addEventListener('mouseup', this.onEnd);
-                document.addEventListener('touchend', this.onEnd);
-                document.addEventListener('mousemove', this.onMove);
-                document.addEventListener('touchmove', (e) => this.onMove(e.touches[0]));
+                document.addEventListener('mousedown', this.onStart.bind(this));
+                document.addEventListener('mouseup', this.onEnd.bind(this));
+                document.addEventListener('mousemove', this.onMove.bind(this));
             },
-
-            onStart: function (e) {
-                if(e.target && e.target.closest && (e.target.closest('.modal') || e.target.closest('.menu-btn'))) return;
-
-                // Dokunulduğu an otomatik dönmeyi iptal et
-                this.autoRotate = false;
-
-                this.ifMouseDown = true;
-                this.x_cord = e.clientX;
-                this.y_cord = e.clientY;
-                this.startX = e.clientX;
-                this.startY = e.clientY;
-                this.isDragging = false;
-                this.velocityX = 0;
-                this.velocityY = 0;
-            },
-
+            onStart: function (e) { this.ifMouseDown = true; this.x_cord = e.clientX; this.y_cord = e.clientY; },
+            onEnd: function () { this.ifMouseDown = false; },
             onMove: function (e) {
                 if (this.ifMouseDown) {
-                    var currentX = e.clientX;
-                    var currentY = e.clientY;
-                    if (Math.abs(currentX - this.startX) > 5 || Math.abs(currentY - this.startY) > 5) {
-                        this.isDragging = true;
-                    }
-                    var temp_x = currentX - this.x_cord;
-                    var temp_y = currentY - this.y_cord;
-                    this.velocityY = temp_x * this.data.speed / 250; 
+                    var temp_x = e.clientX - this.x_cord;
+                    var temp_y = e.clientY - this.y_cord;
+                    this.velocityY = temp_x * this.data.speed / 250;
                     this.velocityX = temp_y * this.data.speed / 250;
-                    this.x_cord = currentX;
-                    this.y_cord = currentY;
+                    this.x_cord = e.clientX;
+                    this.y_cord = e.clientY;
                 }
             },
-
-            onEnd: function () {
-                this.ifMouseDown = false;
-            },
-
             tick: function () {
-                // Eğer kullanıcı dokunmuyorsa
                 if (!this.ifMouseDown) {
-                    
-                    if (this.autoRotate) {
-                        // ÖZELLİK 1: Otomatik Yavaş Dönüş
-                        this.el.object3D.rotation.y += 0.005; 
-                    } else {
-                        // Kullanıcı bıraktıktan sonraki eylemsizlik (Inertia)
-                        this.velocityX *= this.data.friction;
-                        this.velocityY *= this.data.friction;
-                        this.el.object3D.rotation.y += this.velocityY;
-                        this.el.object3D.rotation.x += this.velocityX;
-                    }
+                    this.velocityX *= this.data.friction;
+                    this.velocityY *= this.data.friction;
+                    this.el.object3D.rotation.y += this.velocityY;
+                    this.el.object3D.rotation.x += this.velocityX;
                 }
-            }
-        });
-
-        // --- ÖZELLİK 2: TIKLAYINCA BÜYÜME EFEKTİ ---
-        AFRAME.registerComponent('tiklama-efekti', {
-            init: function () {
-                var el = this.el; // Tıklanan YÜZEY
-                var wrapper = document.querySelector('#donen-merkez'); // Büyüyecek olan ANA KÜP
-                
-                el.addEventListener('click', function () {
-                    // Sürükleme yapılıyorsa tıklamayı yok say (akilli-kontrol'den kontrol edilebilir ama basit tutalım)
-                    // Burada basitçe animasyonu tetikliyoruz
-                    
-                    // 1. Modal ID'sini al (yüzeyin id'sinden)
-                    var hedefModal = el.getAttribute('data-modal');
-                    modalAc(hedefModal);
-
-                    // 2. Büyüme Animasyonu (Scale Up & Down)
-                    wrapper.setAttribute('animation', {
-                        property: 'scale',
-                        from: '1 1 1',
-                        to: '1.3 1.3 1.3', // %30 Büyü
-                        dur: 150,
-                        easing: 'easeOutQuad',
-                        dir: 'alternate', // Git ve Gel
-                        loop: 1 // 1 kere yap (git-gel = 2 hareket)
-                    });
-                });
             }
         });
     </script>
-
-    <style>
-        /* ARAYÜZ (UI) */
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
-        }
-        .header { text-align: center; color: white; margin-top: 30px; pointer-events: none; }
-        .header h1 { margin: 0; font-size: 1.8rem; color: #ff9f43; text-transform: uppercase; text-shadow: 0 0 10px #ff9f43; }
-        .header p { color: #ccc; font-size: 0.9rem; }
-
-        /* Modal Pencereler */
-        .modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 85%; max-width: 350px; background: rgba(20, 20, 25, 0.95);
-            border: 2px solid #ff9f43; border-radius: 20px; padding: 25px; color: white;
-            display: none; opacity: 0; pointer-events: auto; z-index: 20; transition: 0.3s;
-            box-shadow: 0 0 50px rgba(255, 159, 67, 0.3);
-        }
-        .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-        .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; margin-top: 20px; font-weight: bold; cursor: pointer; }
-        
-        /* İpucu Animasyonu */
-        .ipucu {
-            position: absolute; bottom: 50px; width: 100%; text-align: center; color: rgba(255,255,255,0.5);
-            animation: bounce 2s infinite; font-size: 0.8rem;
-        }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    </style>
 </head>
 
-<body>
+<body style="margin:0; overflow:hidden; background:black;">
 
-    <div id="ui-layer">
-        <div class="header">
-            <h1>EĞİTMEN KÜPÜ</h1>
-            <p>Döndür ve Yüzeylere Tıkla</p>
-        </div>
-        <div class="ipucu">
-            <i class="fa-solid fa-hand-pointer"></i> Bir yüzeye dokun
-        </div>
+    <div style="position:fixed; top:20px; width:100%; text-align:center; color:white; font-family:sans-serif; pointer-events:none; z-index:99;">
+        <h1>YÜZEY NUMARALARI</h1>
+        <p>Küpü çevir ve hangi numaraya ne geleceğini not al.</p>
     </div>
 
-    <div id="modal-on" class="modal">
-        <h2><i class="fa-solid fa-cube"></i> MAKER</h2>
-        <p>Tasarım ve Üretim süreçleri.</p>
-        <ul><li>Tinkercad</li><li>3D Baskı</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">Tamam</button>
-    </div>
-    <div id="modal-sag" class="modal">
-        <h2><i class="fa-solid fa-microchip"></i> ROBOTİK</h2>
-        <p>Elektronik ve Sensör dünyası.</p>
-        <ul><li>Arduino</li><li>VEX IQ</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">Tamam</button>
-    </div>
-    <div id="modal-arka" class="modal">
-        <h2><i class="fa-solid fa-code"></i> YAZILIM</h2>
-        <p>Algoritma ve Kodlama.</p>
-        <ul><li>Python</li><li>Yapay Zeka</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">Tamam</button>
-    </div>
-    <div id="modal-sol" class="modal">
-        <h2><i class="fa-solid fa-trophy"></i> HACKOUTLON</h2>
-        <p>Büyük Proje Maratonu.</p>
-        <ul><li>Takım Çalışması</li><li>Prototip</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">Tamam</button>
-    </div>
-
-    <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
-        
-        <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+    <a-scene background="color: #222">
+        <a-light type="ambient" intensity="0.5"></a-light>
         <a-light type="directional" position="2 4 3" intensity="1.5"></a-light>
 
         <a-assets>
             <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
         </a-assets>
 
-        <a-entity id="donen-merkez" position="0 1 -4" akilli-kontrol>
+        <a-entity id="donen-merkez" position="0 0 -4" kontrol>
             
             <a-entity gltf-model="#kupu" scale="0.5 0.5 0.5"></a-entity>
 
-            <a-plane class="tiklanabilir" data-modal="modal-on" tiklama-efekti
-                position="0 0 0.51" width="1" height="1" 
-                material="color: #ff9f43; opacity: 0.2; transparent: true side: double">
-                <a-text value="MAKER" align="center" color="white" position="0 0 0.1" scale="2 2 2"></a-text>
+            <a-plane position="0 0 0.51" width="0.8" height="0.8" color="red" opacity="0.8">
+                <a-text value="1" align="center" width="10"></a-text>
+                <a-text value="ON" align="center" position="0 -0.3 0" width="4"></a-text>
             </a-plane>
 
-            <a-plane class="tiklanabilir" data-modal="modal-sag" tiklama-efekti
-                position="0.51 0 0" rotation="0 90 0" width="1" height="1"
-                material="color: #00d2d3; opacity: 0.2; transparent: true side: double">
-                <a-text value="ROBOTIK" align="center" color="white" position="0 0 0.1" scale="2 2 2"></a-text>
+            <a-plane position="0.51 0 0" rotation="0 90 0" width="0.8" height="0.8" color="green" opacity="0.8">
+                <a-text value="2" align="center" width="10"></a-text>
+                <a-text value="SAG" align="center" position="0 -0.3 0" width="4"></a-text>
             </a-plane>
 
-            <a-plane class="tiklanabilir" data-modal="modal-arka" tiklama-efekti
-                position="0 0 -0.51" rotation="0 180 0" width="1" height="1"
-                material="color: #5f27cd; opacity: 0.2; transparent: true side: double">
-                <a-text value="YAZILIM" align="center" color="white" position="0 0 0.1" scale="2 2 2" rotation="0 0 0"></a-text>
+            <a-plane position="0 0 -0.51" rotation="0 180 0" width="0.8" height="0.8" color="blue" opacity="0.8">
+                <a-text value="3" align="center" width="10"></a-text>
+                <a-text value="ARKA" align="center" position="0 -0.3 0" width="4"></a-text>
             </a-plane>
 
-            <a-plane class="tiklanabilir" data-modal="modal-sol" tiklama-efekti
-                position="-0.51 0 0" rotation="0 -90 0" width="1" height="1"
-                material="color: #ff6b6b; opacity: 0.2; transparent: true side: double">
-                <a-text value="HACKOUTLON" align="center" color="white" position="0 0 0.1" scale="1.5 1.5 1.5"></a-text>
+            <a-plane position="-0.51 0 0" rotation="0 -90 0" width="0.8" height="0.8" color="#f1c40f" opacity="0.8">
+                <a-text value="4" align="center" width="10"></a-text>
+                <a-text value="SOL" align="center" position="0 -0.3 0" width="4"></a-text>
+            </a-plane>
+
+            <a-plane position="0 0.51 0" rotation="-90 0 0" width="0.8" height="0.8" color="orange" opacity="0.8">
+                <a-text value="5" align="center" width="10"></a-text>
+                <a-text value="UST" align="center" position="0 -0.3 0" width="4"></a-text>
+            </a-plane>
+
+            <a-plane position="0 -0.51 0" rotation="90 0 0" width="0.8" height="0.8" color="purple" opacity="0.8">
+                <a-text value="6" align="center" width="10"></a-text>
+                <a-text value="ALT" align="center" position="0 -0.3 0" width="4"></a-text>
             </a-plane>
 
         </a-entity>
 
-        <a-camera position="0 1.6 0"></a-camera>
-
+        <a-camera position="0 0 0"></a-camera>
     </a-scene>
-
-    <script>
-        function modalKapat() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif')); }
-        function modalAc(id) { 
-            modalKapat(); 
-            document.getElementById(id).classList.add('aktif'); 
-        }
-    </script>
-
 </body>
 </html>
