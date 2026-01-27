@@ -61,4 +61,57 @@
     <div id="arayuz-katmani">
         
         <div id="bilgi-kutusu" class="aktif-buton">
-            <h3
+            <h3 style="margin:0 0 10px 0; color:#ff9f43;">🚀 Eğitim İçeriği</h3>
+            <p>Bu 3D nesne, eğitimde AR/VR kullanımını simgelemektedir.</p>
+            <p style="font-size:0.9rem; color:#ccc;">Detaylar için panele tıklayın.</p>
+            <button class="kapat-btn" onclick="kutuKapat()">Kapat</button>
+        </div>
+
+    </div>
+
+    <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
+
+        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+        <a-light type="directional" position="2 4 3" intensity="1.2"></a-light>
+        <a-light type="point" position="-2 2 2" intensity="0.5" color="#ff9f43"></a-light>
+
+        <a-assets>
+            <a-asset-item id="kupu" src="egitim_kupu_kucuk.glb"></a-asset-item>
+        </a-assets>
+
+        <a-entity 
+            id="nesne"
+            class="tiklanabilir" 
+            gltf-model="#kupu"
+            position="0 1 -4" 
+            scale="0.5 0.5 0.5"
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
+        </a-entity>
+
+        <a-camera position="0 1.6 0"></a-camera>
+
+    </a-scene>
+
+    <script>
+        const nesne = document.getElementById('nesne');
+        const kutu = document.getElementById('bilgi-kutusu');
+
+        // Nesneye tıklandığında çalışır
+        nesne.addEventListener('click', function() {
+            kutu.style.display = 'block';
+            
+            // Tıklayınca nesne biraz büyüsün (Geri bildirim)
+            nesne.setAttribute('scale', '0.6 0.6 0.6');
+            setTimeout(() => {
+                nesne.setAttribute('scale', '0.5 0.5 0.5');
+            }, 200);
+        });
+
+        // Kutuyu kapatma fonksiyonu
+        function kutuKapat() {
+            kutu.style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
