@@ -3,45 +3,45 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Çoklu Eğitim Küpü</title>
+    <title>Çoklu Eğitim Küpü XL</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
         // =================================================================
-        // 1. KÜP VERİTABANI (İÇERİKLER BURADA)
+        // 1. KÜP İÇERİK VERİTABANI
         // =================================================================
         const cubeData = [
             {
                 id: 0,
                 title: "GENEL TEKNOLOJİ",
                 faces: [
-                    { text: "AR", sub: "Artirilmis Gerceklik", color: "#ff4757", modalID: "modal-ar" },     // ÖN
-                    { text: "VR", sub: "Sanal Gerceklik", color: "#3742fa", modalID: "modal-vr" },        // SAĞ
-                    { text: "STEM", sub: "Maker Kulturu", color: "#2ed573", modalID: "modal-stem" },      // ARKA
-                    { text: "AI", sub: "Yapay Zeka", color: "#ffa502", modalID: "modal-ai" },             // SOL
-                    { text: "3D BASKI", sub: "Uretim", color: "#ff6348", modalID: "modal-print" },        // ÜST
-                    { text: "3D TARAMA", sub: "Dijitallesme", color: "#5352ed", modalID: "modal-scan" }   // ALT
+                    { text: "AR", sub: "Artirilmis Gerceklik", color: "#ff4757", modalID: "modal-ar" },
+                    { text: "VR", sub: "Sanal Gerceklik", color: "#3742fa", modalID: "modal-vr" },
+                    { text: "STEM", sub: "Maker Kulturu", color: "#2ed573", modalID: "modal-stem" },
+                    { text: "AI", sub: "Yapay Zeka", color: "#ffa502", modalID: "modal-ai" },
+                    { text: "3D BASKI", sub: "Uretim", color: "#ff6348", modalID: "modal-print" },
+                    { text: "3D TARAMA", sub: "Dijitallesme", color: "#5352ed", modalID: "modal-scan" }
                 ]
             },
             {
                 id: 1,
                 title: "ROBOTİK & YAZILIM",
                 faces: [
-                    { text: "ARDUINO", sub: "Robotik Kodlama", color: "#00979d", modalID: "modal-arduino" }, // ÖN
-                    { text: "PYTHON", sub: "Veri Bilimi", color: "#f1c40f", modalID: "modal-python" },       // SAĞ
-                    { text: "IOT", sub: "Nesnelerin Int.", color: "#8e44ad", modalID: "modal-iot" },         // ARKA
-                    { text: "UNITY", sub: "Oyun Gelistirme", color: "#2c3e50", modalID: "modal-unity" },     // SOL
-                    { text: "SENSORS", sub: "Elektronik", color: "#e74c3c", modalID: "modal-sensor" },       // ÜST
-                    { text: "CIRCUITS", sub: "Devre Tasarimi", color: "#d35400", modalID: "modal-circuit" }  // ALT
+                    { text: "ARDUINO", sub: "Robotik Kodlama", color: "#00979d", modalID: "modal-arduino" },
+                    { text: "PYTHON", sub: "Veri Bilimi", color: "#f1c40f", modalID: "modal-python" },
+                    { text: "IOT", sub: "Nesnelerin Int.", color: "#8e44ad", modalID: "modal-iot" },
+                    { text: "UNITY", sub: "Oyun Gelistirme", color: "#2c3e50", modalID: "modal-unity" },
+                    { text: "SENSORS", sub: "Elektronik", color: "#e74c3c", modalID: "modal-sensor" },
+                    { text: "CIRCUITS", sub: "Devre Tasarimi", color: "#d35400", modalID: "modal-circuit" }
                 ]
             }
         ];
 
-        let currentCubeIndex = 0; // Şu an hangi küpteyiz?
-        var baseScale = { x: 0.5, y: 0.5, z: 0.5 };
+        let currentCubeIndex = 0;
+        var baseScale = { x: 0.7, y: 0.7, z: 0.7 }; // Varsayılanı büyüttük
 
-        // --- MOBİL AYARLAR ---
+        // --- MOBİL AYARLAR (GÜNCELLENDİ: DAHA BÜYÜK) ---
         AFRAME.registerComponent('mobil-ayar', {
             init: function () {
                 var isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -49,17 +49,18 @@
                 var model = document.querySelector('#kafes-sistemi');
 
                 if (isMobile) {
-                    baseScale = { x: 0.35, y: 0.35, z: 0.35 }; 
+                    // MOBİL İÇİN BÜYÜK BOYUT
+                    baseScale = { x: 0.45, y: 0.45, z: 0.45 }; // 0.35'ten 0.45'e çıktı
                     model.setAttribute('scale', baseScale);
                     model.setAttribute('position', '0 1.3 -1.5');
                     kamera.setAttribute('position', '0 1.3 -0.5');
                 } else {
-                    baseScale = { x: 0.5, y: 0.5, z: 0.5 };
+                    // PC İÇİN BÜYÜK BOYUT
+                    baseScale = { x: 0.7, y: 0.7, z: 0.7 }; // 0.5'ten 0.7'ye çıktı
                     model.setAttribute('scale', baseScale);
                     model.setAttribute('position', '0 0 0');
-                    kamera.setAttribute('position', '0 0 4');
+                    kamera.setAttribute('position', '0 0 4.2'); // Çok az geri çektik (Çarpmasın diye)
                 }
-                // İlk yüklemede küpü boya
                 updateCubeVisuals();
             }
         });
@@ -122,57 +123,54 @@
                 el.addEventListener('click', function (evt) {
                     if (navigator.vibrate) navigator.vibrate(50);
                     
-                    // Parlama
                     el.setAttribute('animation__flash', {
                         property: 'material.opacity', from: 0.8, to: 0.2, dur: 300, easing: 'easeOutQuad'
                     });
 
-                    // Hangi yüzeye tıklandı? (0-5 arası index)
                     var faceIndex = parseInt(el.getAttribute('data-face-index'));
-                    
-                    // Şu anki küpün verisini al
                     var activeCube = cubeData[currentCubeIndex];
                     var faceData = activeCube.faces[faceIndex];
-                    
-                    // Modalı aç
                     modalAc(faceData.modalID);
                 });
             }
         });
 
-        // --- KÜP GÜNCELLEME FONKSİYONU ---
+        // --- KÜP GÜNCELLEME (AKILLI FONT AYARI) ---
         function updateCubeVisuals() {
             var data = cubeData[currentCubeIndex];
-            
-            // Başlığı Güncelle
             document.getElementById('cube-title').innerText = data.title;
 
-            // 6 Yüzeyi Döngüyle Güncelle
             for(let i=0; i<6; i++) {
                 let faceInfo = data.faces[i];
-                
-                // Rengi değiştir
                 let plane = document.querySelector(`#plane-${i}`);
                 plane.setAttribute('color', faceInfo.color);
                 
-                // Ana Yazıyı değiştir
                 let textMain = document.querySelector(`#text-main-${i}`);
                 textMain.setAttribute('value', faceInfo.text);
                 
-                // Alt Yazıyı değiştir
+                // Akıllı Boyutlandırma
+                let len = faceInfo.text.length;
+                let newWidth = "10"; 
+
+                if (len > 3 && len <= 6) {
+                    newWidth = "8"; 
+                } else if (len > 6) {
+                    newWidth = "6.5"; 
+                }
+
+                textMain.setAttribute('width', newWidth);
+                
                 let textSub = document.querySelector(`#text-sub-${i}`);
                 textSub.setAttribute('value', faceInfo.sub);
             }
         }
 
-        // --- KÜP DEĞİŞTİRME (İLERİ/GERİ) ---
+        // --- KÜP DEĞİŞTİRME ---
         function changeCube(direction) {
-            // Küpü geçici olarak küçült (Animasyon)
             var wrapper = document.querySelector('#kafes-sistemi');
             wrapper.setAttribute('scale', '0.1 0.1 0.1');
 
             setTimeout(() => {
-                // Indexi değiştir
                 if(direction === 'next') {
                     currentCubeIndex++;
                     if(currentCubeIndex >= cubeData.length) currentCubeIndex = 0;
@@ -180,11 +178,7 @@
                     currentCubeIndex--;
                     if(currentCubeIndex < 0) currentCubeIndex = cubeData.length - 1;
                 }
-
-                // Görselleri güncelle
                 updateCubeVisuals();
-
-                // Küpü tekrar büyüt (Yaylanarak)
                 wrapper.setAttribute('animation__pop', {
                     property: 'scale',
                     from: '0.1 0.1 0.1',
@@ -201,18 +195,14 @@
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; font-family: 'Segoe UI', sans-serif; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
 
-        /* BAŞLIK & NAVİGASYON */
-        .header-container {
-            position: absolute; top: 40px; width: 100%; text-align: center; pointer-events: none;
-        }
+        .header-container { position: absolute; top: 40px; width: 100%; text-align: center; pointer-events: none; }
         .header h1 { margin: 0; font-size: 2rem; color: #fff; text-shadow: 0 2px 10px #000; transition: 0.3s; }
         .header p { color: #ccc; margin: 5px 0 0 0; font-size: 0.9rem; }
 
-        /* ALT KONTROL BAR (NAVIGASYON) */
         .nav-bar {
             position: absolute; bottom: 40px; width: 100%; 
             display: flex; justify-content: center; align-items: center; gap: 30px;
-            pointer-events: auto; /* Butonlara basılabilsin */
+            pointer-events: auto;
         }
         
         .nav-btn {
@@ -224,12 +214,8 @@
         }
         .nav-btn:active { transform: scale(0.9); background: rgba(255,159,67,0.8); border-color: #ff9f43; }
         
-        .page-indicator {
-            color: rgba(255,255,255,0.5); font-weight: bold; font-size: 1.2rem;
-            text-transform: uppercase; letter-spacing: 2px;
-        }
+        .page-indicator { color: rgba(255,255,255,0.5); font-weight: bold; font-size: 1.2rem; }
 
-        /* MODAL */
         .modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
             width: 90%; max-width: 400px; 
@@ -257,7 +243,6 @@
                 <p>Küpü Döndür & Keşfet</p>
             </div>
         </div>
-
         <div class="nav-bar">
             <div class="nav-btn" onclick="changeCube('prev')"><i class="fa-solid fa-chevron-left"></i></div>
             <div class="page-indicator"><i class="fa-solid fa-cube"></i></div>
@@ -320,14 +305,14 @@
 
             <a-entity position="0 0.51 0" rotation="-90 0 0">
                 <a-plane id="plane-4" class="tiklanabilir" data-face-index="4" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
-                <a-text id="text-main-4" value="" align="center" color="white" width="6" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-main-4" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
                 <a-text id="text-sub-4" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
                 <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="0 -0.51 0" rotation="90 0 0">
                 <a-plane id="plane-5" class="tiklanabilir" data-face-index="5" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
-                <a-text id="text-main-5" value="" align="center" color="white" width="5" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-main-5" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
                 <a-text id="text-sub-5" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
                 <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
@@ -344,7 +329,6 @@
             document.getElementById(id).classList.add('aktif');
             document.body.classList.add('modal-open');
 
-            // Küpü geçici olarak küçült (Odak modu)
             var wrapper = document.querySelector('#kafes-sistemi');
             var targetScale = { x: baseScale.x * 0.75, y: baseScale.y * 0.75, z: baseScale.z * 0.75 };
             wrapper.setAttribute('animation__shrink', {
@@ -356,7 +340,6 @@
             document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
             document.body.classList.remove('modal-open');
 
-            // Küpü eski boyutuna getir
             var wrapper = document.querySelector('#kafes-sistemi');
             wrapper.setAttribute('animation__restore', {
                 property: 'scale', to: baseScale.x + ' ' + baseScale.y + ' ' + baseScale.z, dur: 600, easing: 'easeOutElastic'
