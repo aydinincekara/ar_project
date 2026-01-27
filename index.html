@@ -3,16 +3,45 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bilişim Küpü Pro</title>
-    
+    <title>Çoklu Eğitim Küpü</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
-        // GLOBAL AYARLAR
+        // =================================================================
+        // 1. KÜP VERİTABANI (İÇERİKLER BURADA)
+        // =================================================================
+        const cubeData = [
+            {
+                id: 0,
+                title: "GENEL TEKNOLOJİ",
+                faces: [
+                    { text: "AR", sub: "Artirilmis Gerceklik", color: "#ff4757", modalID: "modal-ar" },     // ÖN
+                    { text: "VR", sub: "Sanal Gerceklik", color: "#3742fa", modalID: "modal-vr" },        // SAĞ
+                    { text: "STEM", sub: "Maker Kulturu", color: "#2ed573", modalID: "modal-stem" },      // ARKA
+                    { text: "AI", sub: "Yapay Zeka", color: "#ffa502", modalID: "modal-ai" },             // SOL
+                    { text: "3D BASKI", sub: "Uretim", color: "#ff6348", modalID: "modal-print" },        // ÜST
+                    { text: "3D TARAMA", sub: "Dijitallesme", color: "#5352ed", modalID: "modal-scan" }   // ALT
+                ]
+            },
+            {
+                id: 1,
+                title: "ROBOTİK & YAZILIM",
+                faces: [
+                    { text: "ARDUINO", sub: "Robotik Kodlama", color: "#00979d", modalID: "modal-arduino" }, // ÖN
+                    { text: "PYTHON", sub: "Veri Bilimi", color: "#f1c40f", modalID: "modal-python" },       // SAĞ
+                    { text: "IOT", sub: "Nesnelerin Int.", color: "#8e44ad", modalID: "modal-iot" },         // ARKA
+                    { text: "UNITY", sub: "Oyun Gelistirme", color: "#2c3e50", modalID: "modal-unity" },     // SOL
+                    { text: "SENSORS", sub: "Elektronik", color: "#e74c3c", modalID: "modal-sensor" },       // ÜST
+                    { text: "CIRCUITS", sub: "Devre Tasarimi", color: "#d35400", modalID: "modal-circuit" }  // ALT
+                ]
+            }
+        ];
+
+        let currentCubeIndex = 0; // Şu an hangi küpteyiz?
         var baseScale = { x: 0.5, y: 0.5, z: 0.5 };
 
-        // --- 1. MOBİL / PC AYARLAYICI ---
+        // --- MOBİL AYARLAR ---
         AFRAME.registerComponent('mobil-ayar', {
             init: function () {
                 var isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -20,22 +49,22 @@
                 var model = document.querySelector('#kafes-sistemi');
 
                 if (isMobile) {
-                    // MOBİL AYARLARI (Küp küçük, kamera yakın, pozisyon yukarıda)
                     baseScale = { x: 0.35, y: 0.35, z: 0.35 }; 
                     model.setAttribute('scale', baseScale);
-                    model.setAttribute('position', '0 1.3 -1.5'); // Göğüs hizası
-                    kamera.setAttribute('position', '0 1.3 -0.5'); // Çok yakından bakış
+                    model.setAttribute('position', '0 1.3 -1.5');
+                    kamera.setAttribute('position', '0 1.3 -0.5');
                 } else {
-                    // PC AYARLARI (Küp büyük, kamera uzakta)
                     baseScale = { x: 0.5, y: 0.5, z: 0.5 };
                     model.setAttribute('scale', baseScale);
                     model.setAttribute('position', '0 0 0');
                     kamera.setAttribute('position', '0 0 4');
                 }
+                // İlk yüklemede küpü boya
+                updateCubeVisuals();
             }
         });
 
-        // --- 2. DÖNDÜRME MOTORU (SÜRÜKLE-BIRAK) ---
+        // --- DÖNDÜRME MOTORU ---
         AFRAME.registerComponent('akilli-kontrol', {
             schema: { speed: { default: 2.5 }, friction: { default: 0.94 } },
             init: function () {
@@ -57,7 +86,7 @@
                 document.addEventListener('touchmove', (e) => this.onMove(e.touches[0]), {passive: false});
             },
             onStart: function (e) {
-                if(e.target && e.target.closest && (e.target.closest('.modal') || e.target.closest('.header'))) return;
+                if(e.target.closest('.modal') || e.target.closest('.nav-btn')) return;
                 this.autoRotate = false;
                 this.ifMouseDown = true;
                 this.startX = e.clientX; this.startY = e.clientY;
@@ -67,16 +96,15 @@
             onMove: function (e) {
                 if (this.ifMouseDown) {
                     var currentX = e.clientX; var currentY = e.clientY;
-                    var deltaX = currentX - this.lastX; var deltaY = currentY - this.lastY;
-                    this.velocityY = deltaX * this.data.speed / 250; 
-                    this.velocityX = deltaY * this.data.speed / 250;
+                    this.velocityY = (currentX - this.lastX) * this.data.speed / 250; 
+                    this.velocityX = (currentY - this.lastY) * this.data.speed / 250;
                     this.lastX = currentX; this.lastY = currentY;
                 }
             },
             onEnd: function () { this.ifMouseDown = false; },
             tick: function () {
                 if (!this.ifMouseDown) {
-                    if(this.autoRotate) { this.el.object3D.rotation.y += 0.004; } // Yavaş otomatik dönüş
+                    if(this.autoRotate) { this.el.object3D.rotation.y += 0.004; }
                     else {
                         this.velocityX *= this.data.friction;
                         this.velocityY *= this.data.friction;
@@ -87,38 +115,121 @@
             }
         });
 
-        // --- 3. TIKLAMA, TİTREŞİM VE PARLAMA ---
+        // --- TIKLAMA YÖNETİCİSİ ---
         AFRAME.registerComponent('tiklama-efekti', {
             init: function () {
                 var el = this.el;
                 el.addEventListener('click', function (evt) {
-                    // A) TİTREŞİM
                     if (navigator.vibrate) navigator.vibrate(50);
-
-                    // B) PARLAMA EFEKTİ
+                    
+                    // Parlama
                     el.setAttribute('animation__flash', {
                         property: 'material.opacity', from: 0.8, to: 0.2, dur: 300, easing: 'easeOutQuad'
                     });
 
-                    // C) MODAL AÇ
-                    var hedefModal = el.getAttribute('data-modal');
-                    modalAc(hedefModal);
+                    // Hangi yüzeye tıklandı? (0-5 arası index)
+                    var faceIndex = parseInt(el.getAttribute('data-face-index'));
+                    
+                    // Şu anki küpün verisini al
+                    var activeCube = cubeData[currentCubeIndex];
+                    var faceData = activeCube.faces[faceIndex];
+                    
+                    // Modalı aç
+                    modalAc(faceData.modalID);
                 });
             }
         });
+
+        // --- KÜP GÜNCELLEME FONKSİYONU ---
+        function updateCubeVisuals() {
+            var data = cubeData[currentCubeIndex];
+            
+            // Başlığı Güncelle
+            document.getElementById('cube-title').innerText = data.title;
+
+            // 6 Yüzeyi Döngüyle Güncelle
+            for(let i=0; i<6; i++) {
+                let faceInfo = data.faces[i];
+                
+                // Rengi değiştir
+                let plane = document.querySelector(`#plane-${i}`);
+                plane.setAttribute('color', faceInfo.color);
+                
+                // Ana Yazıyı değiştir
+                let textMain = document.querySelector(`#text-main-${i}`);
+                textMain.setAttribute('value', faceInfo.text);
+                
+                // Alt Yazıyı değiştir
+                let textSub = document.querySelector(`#text-sub-${i}`);
+                textSub.setAttribute('value', faceInfo.sub);
+            }
+        }
+
+        // --- KÜP DEĞİŞTİRME (İLERİ/GERİ) ---
+        function changeCube(direction) {
+            // Küpü geçici olarak küçült (Animasyon)
+            var wrapper = document.querySelector('#kafes-sistemi');
+            wrapper.setAttribute('scale', '0.1 0.1 0.1');
+
+            setTimeout(() => {
+                // Indexi değiştir
+                if(direction === 'next') {
+                    currentCubeIndex++;
+                    if(currentCubeIndex >= cubeData.length) currentCubeIndex = 0;
+                } else {
+                    currentCubeIndex--;
+                    if(currentCubeIndex < 0) currentCubeIndex = cubeData.length - 1;
+                }
+
+                // Görselleri güncelle
+                updateCubeVisuals();
+
+                // Küpü tekrar büyüt (Yaylanarak)
+                wrapper.setAttribute('animation__pop', {
+                    property: 'scale',
+                    from: '0.1 0.1 0.1',
+                    to: baseScale.x + ' ' + baseScale.y + ' ' + baseScale.z,
+                    dur: 600,
+                    easing: 'easeOutElastic'
+                });
+            }, 200);
+        }
+
     </script>
 
     <style>
-        /* ARAYÜZ TASARIMI */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; font-family: 'Segoe UI', sans-serif; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+
+        /* BAŞLIK & NAVİGASYON */
+        .header-container {
+            position: absolute; top: 40px; width: 100%; text-align: center; pointer-events: none;
+        }
+        .header h1 { margin: 0; font-size: 2rem; color: #fff; text-shadow: 0 2px 10px #000; transition: 0.3s; }
+        .header p { color: #ccc; margin: 5px 0 0 0; font-size: 0.9rem; }
+
+        /* ALT KONTROL BAR (NAVIGASYON) */
+        .nav-bar {
+            position: absolute; bottom: 40px; width: 100%; 
+            display: flex; justify-content: center; align-items: center; gap: 30px;
+            pointer-events: auto; /* Butonlara basılabilsin */
+        }
         
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%); }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3); color: white;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: pointer; transition: 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.9); background: rgba(255,159,67,0.8); border-color: #ff9f43; }
+        
+        .page-indicator {
+            color: rgba(255,255,255,0.5); font-weight: bold; font-size: 1.2rem;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
 
-        .header { text-align: center; margin-top: 50px; pointer-events: none; transition: opacity 0.3s; }
-        .header h1 { margin: 0; font-size: 2.2rem; color: #fff; text-shadow: 0 2px 10px #000; }
-        .header p { color: #ff9f43; margin-top: 5px; font-size: 1.1rem; font-weight: bold; }
-
-        /* MODAL PENCERE */
+        /* MODAL */
         .modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
             width: 90%; max-width: 400px; 
@@ -129,59 +240,44 @@
             box-shadow: 0 0 60px rgba(0,0,0,0.9); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        
-        .modal-header { display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px; }
-        .modal-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(255,255,255,0.1); color: #ff9f43; }
-        
-        .modal h2 { margin: 0; font-size: 1.5rem; color: #fff; }
+        .modal h2 { margin: 0 0 15px 0; font-size: 1.5rem; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 10px; }
         .modal ul { padding-left: 20px; color: #ccc; font-size: 1.1rem; line-height: 1.6; }
-        .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; margin-top: 20px; cursor: pointer; }
-        
-        /* Modal açılınca arkaplanı biraz karart ve başlığı silikleştir */
-        body.modal-open .header { opacity: 0.1; }
-        body.modal-open #ui-layer { background: rgba(0,0,0,0.8); }
+        .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+
+        body.modal-open .header-container, body.modal-open .nav-bar { opacity: 0.1; pointer-events: none; }
     </style>
 </head>
 
 <body>
 
     <div id="ui-layer">
-        <div class="header">
-            <h1>BİLİŞİM KÜPÜ</h1>
-            <p>Döndür ve Konuya Dokun</p>
+        <div class="header-container">
+            <div class="header">
+                <h1 id="cube-title">YÜKLENİYOR...</h1>
+                <p>Küpü Döndür & Keşfet</p>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-btn" onclick="changeCube('prev')"><i class="fa-solid fa-chevron-left"></i></div>
+            <div class="page-indicator"><i class="fa-solid fa-cube"></i></div>
+            <div class="nav-btn" onclick="changeCube('next')"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
     </div>
 
-    <div id="modal-1" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-mobile-screen"></i></div><h2>Artırılmış Gerçeklik</h2></div>
-        <ul><li>Eğitimde AR Uygulamaları</li><li>Sınıf içi Etkileşim</li><li>Mobil Entegrasyon</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
-    <div id="modal-2" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-vr-cardboard"></i></div><h2>Sanal Gerçeklik</h2></div>
-        <ul><li>VEXcode VR Robotik</li><li>Sanal Müze Gezileri</li><li>360 Derece Video</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
-    <div id="modal-3" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div><h2>STEM & Maker</h2></div>
-        <ul><li>Tasarım ve Üretim</li><li>3D Kalem Atölyesi</li><li>Proje Tabanlı Öğrenme</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
-    <div id="modal-4" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-brain"></i></div><h2>Yapay Zeka</h2></div>
-        <ul><li>Teachable Machine</li><li>Makine Öğrenmesi</li><li>Görüntü İşleme</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
-    <div id="modal-5" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-cube"></i></div><h2>3D Baskı</h2></div>
-        <ul><li>Cura ile Dilimleme</li><li>Filament Teknolojileri</li><li>Bakım ve Kalibrasyon</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
-    <div id="modal-6" class="modal">
-        <div class="modal-header"><div class="modal-icon"><i class="fa-solid fa-camera-rotate"></i></div><h2>3D Tarama</h2></div>
-        <ul><li>Fotogrametri</li><li>Nesneleri Dijitalleştirme</li><li>Lidar Teknolojisi</li></ul>
-        <button class="kapat-btn" onclick="modalKapat()">KAPAT</button>
-    </div>
+    <div id="modal-ar" class="modal"><h2>Artırılmış Gerçeklik</h2><ul><li>Eğitimde AR</li><li>Sanal Sergi</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-vr" class="modal"><h2>Sanal Gerçeklik</h2><ul><li>VEXcode VR</li><li>Sanal Müze</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-stem" class="modal"><h2>STEM & Maker</h2><ul><li>Tasarım Odaklı</li><li>3D Kalem</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-ai" class="modal"><h2>Yapay Zeka</h2><ul><li>Makine Öğrenmesi</li><li>Görüntü İşleme</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-print" class="modal"><h2>3D Baskı</h2><ul><li>Cura Dilimleme</li><li>Filamentler</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-scan" class="modal"><h2>3D Tarama</h2><ul><li>Fotogrametri</li><li>Dijitalleştirme</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+
+    <div id="modal-arduino" class="modal"><h2>Arduino & Robotik</h2><ul><li>Sensör Bağlantısı</li><li>Devre Kurulumu</li><li>Motor Kontrolü</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-python" class="modal"><h2>Python Yazılım</h2><ul><li>Veri Analizi</li><li>AI Kütüphaneleri</li><li>Otomasyon</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-iot" class="modal"><h2>IoT (Nesnelerin İnterneti)</h2><ul><li>Akıllı Ev Sistemleri</li><li>ESP8266 / ESP32</li><li>Uzaktan Kontrol</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-unity" class="modal"><h2>Unity & C#</h2><ul><li>Oyun Tasarımı</li><li>Fizik Motoru</li><li>C# Kodlama</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-sensor" class="modal"><h2>Elektronik Sensörler</h2><ul><li>Mesafe Sensörü</li><li>Sıcaklık/Nem</li><li>Hareket Algılama</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
+    <div id="modal-circuit" class="modal"><h2>Temel Devreler</h2><ul><li>Breadboard Kullanımı</li><li>Direnç ve LED</li><li>Ohm Kanunu</li></ul><button class="kapat-btn" onclick="modalKapat()">KAPAT</button></div>
 
 
     <a-scene background="color: #111" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir" mobil-ayar>
@@ -192,47 +288,48 @@
 
         <a-entity id="kafes-sistemi" position="0 0 0" scale="0.5 0.5 0.5" akilli-kontrol>
             
-            <a-box color="#2d3436" depth="1" height="1" width="1" 
-                   material="roughness: 0.4; metalness: 0.2"></a-box>
+            <a-box color="#2d3436" depth="1" height="1" width="1" material="roughness: 0.4; metalness: 0.2"></a-box>
 
             <a-entity position="0 0 0.51">
-                <a-plane class="tiklanabilir" data-modal="modal-1" tiklama-efekti width="1" height="1" color="#ff4757" opacity="0.2"></a-plane>
-                <a-text value="AR" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
-                <a-text value="Artirilmis Gerceklik" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #ff4757"></a-plane>
+                <a-plane id="plane-0" class="tiklanabilir" data-face-index="0" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-0" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-0" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="0.51 0 0" rotation="0 90 0">
-                <a-plane class="tiklanabilir" data-modal="modal-2" tiklama-efekti width="1" height="1" color="#3742fa" opacity="0.2"></a-plane>
-                <a-text value="VR" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
-                <a-text value="Sanal Gerceklik" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #3742fa"></a-plane>
+                <a-plane id="plane-1" class="tiklanabilir" data-face-index="1" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-1" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-1" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="0 0 -0.51" rotation="0 180 0">
-                <a-plane class="tiklanabilir" data-modal="modal-3" tiklama-efekti width="1" height="1" color="#2ed573" opacity="0.2"></a-plane>
-                <a-text value="STEM" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
-                <a-text value="Maker Kulturu" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #2ed573"></a-plane>
+                <a-plane id="plane-2" class="tiklanabilir" data-face-index="2" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-2" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-2" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="-0.51 0 0" rotation="0 -90 0">
-                <a-plane class="tiklanabilir" data-modal="modal-4" tiklama-efekti width="1" height="1" color="#ffa502" opacity="0.2"></a-plane>
-                <a-text value="AI" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
-                <a-text value="Yapay Zeka" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #ffa502"></a-plane>
+                <a-plane id="plane-3" class="tiklanabilir" data-face-index="3" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-3" value="" align="center" color="white" width="10" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-3" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="0 0.51 0" rotation="-90 0 0">
-                <a-plane class="tiklanabilir" data-modal="modal-5" tiklama-efekti width="1" height="1" color="#ff6348" opacity="0.2"></a-plane>
-                <a-text value="3D BASKI" align="center" color="white" width="6" position="0 0 0.01" font="kelsonsans"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #ff6348"></a-plane>
+                <a-plane id="plane-4" class="tiklanabilir" data-face-index="4" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-4" value="" align="center" color="white" width="6" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-4" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
             <a-entity position="0 -0.51 0" rotation="90 0 0">
-                <a-plane class="tiklanabilir" data-modal="modal-6" tiklama-efekti width="1" height="1" color="#5352ed" opacity="0.2"></a-plane>
-                <a-text value="3D TARAMA" align="center" color="white" width="5" position="0 0 0.01" font="kelsonsans"></a-text>
-                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: #5352ed"></a-plane>
+                <a-plane id="plane-5" class="tiklanabilir" data-face-index="5" tiklama-efekti width="1" height="1" opacity="0.2" color="#fff"></a-plane>
+                <a-text id="text-main-5" value="" align="center" color="white" width="5" position="0 0.1 0.01" font="kelsonsans"></a-text>
+                <a-text id="text-sub-5" value="" align="center" color="#ddd" width="3" position="0 -0.2 0.01"></a-text>
+                <a-plane width="0.95" height="0.95" position="0 0 0.005" material="shader: flat; wireframe: true; color: white; opacity: 0.3"></a-plane>
             </a-entity>
 
         </a-entity>
@@ -242,36 +339,27 @@
     </a-scene>
 
     <script>
-        // --- 4. MODAL AÇILINCA KÜP KÜÇÜLSÜN (FOCUS MODE) ---
         function modalAc(id) {
-            // UI İşlemleri
             document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
             document.getElementById(id).classList.add('aktif');
             document.body.classList.add('modal-open');
 
-            // Küpü Küçültme İşlemi
+            // Küpü geçici olarak küçült (Odak modu)
             var wrapper = document.querySelector('#kafes-sistemi');
-            // Mevcut (mobil veya pc) scale değerini alıp 0.8 ile çarpıyoruz
             var targetScale = { x: baseScale.x * 0.75, y: baseScale.y * 0.75, z: baseScale.z * 0.75 };
-            
             wrapper.setAttribute('animation__shrink', {
-                property: 'scale',
-                to: targetScale.x + ' ' + targetScale.y + ' ' + targetScale.z,
-                dur: 500, easing: 'easeOutExpo'
+                property: 'scale', to: targetScale.x + ' ' + targetScale.y + ' ' + targetScale.z, dur: 500, easing: 'easeOutExpo'
             });
         }
 
         function modalKapat() {
-            // UI İşlemleri
             document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
             document.body.classList.remove('modal-open');
 
-            // Küpü Eski Haline Getirme
+            // Küpü eski boyutuna getir
             var wrapper = document.querySelector('#kafes-sistemi');
             wrapper.setAttribute('animation__restore', {
-                property: 'scale',
-                to: baseScale.x + ' ' + baseScale.y + ' ' + baseScale.z,
-                dur: 600, easing: 'easeOutElastic' // Yaylanarak geri gelsin
+                property: 'scale', to: baseScale.x + ' ' + baseScale.y + ' ' + baseScale.z, dur: 600, easing: 'easeOutElastic'
             });
         }
     </script>
