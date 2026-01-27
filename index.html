@@ -2,78 +2,190 @@
 <html lang="tr">
 <head>
     <meta charset="utf-8">
-    <title>3D Eğitim Portalı</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bilişim Eğitmen Portalı</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* ARAYÜZ KATMANI (UI) 
-           Tüm butonlar ve yazılar bu katmanda olacak.
-           3D sahnenin üzerinde durması için z-index yüksek tutuldu.
-        */
-        #arayuz-katmani {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Tıklamalar arkadaki 3D sahneye geçsin diye */
-            z-index: 9999;
-        }
+        /* --- ARAYÜZ TASARIMI (UI) --- */
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
 
-        /* Tıklanabilir butonlar için pointer-events açılır */
-        .aktif-buton {
-            pointer-events: auto; 
-        }
-
-        /* Bilgi Kutusu Tasarımı */
-        #bilgi-kutusu {
+        /* Ana Katman (Tüm butonlar burada) */
+        #ui-layer {
             position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(20, 20, 30, 0.9);
-            border: 1px solid rgba(255, 159, 67, 0.5); /* Turuncu Çerçeve */
-            color: white;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Boşluklara tıklayınca arkadaki 3D sahneye geçsin */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            font-family: 'Segoe UI', sans-serif;
-            display: none; /* Başlangıçta gizli */
-            min-width: 250px;
-            box-shadow: 0 0 20px rgba(255, 159, 67, 0.2);
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2), rgba(0,0,0,0.9));
         }
 
-        /* Kapat Butonu */
+        /* Başlık */
+        .header {
+            text-align: center;
+            color: white;
+            pointer-events: auto;
+            margin-top: 20px;
+        }
+        .header h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: #ff9f43; }
+        .header p { margin: 5px 0; font-size: 0.8rem; color: #aaa; }
+
+        /* Menü Izgarası */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            pointer-events: auto;
+        }
+
+        /* Menü Butonları */
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn:active { transform: scale(0.95); background: rgba(255, 159, 67, 0.2); }
+        .menu-btn i { font-size: 1.5rem; color: #ff9f43; }
+        .menu-btn span { font-size: 0.9rem; font-weight: bold; }
+
+        /* Bilgi Kartları (Modal - Başlangıçta Gizli) */
+        .modal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 85%;
+            max-width: 400px;
+            background: rgba(20, 20, 25, 0.95);
+            border: 1px solid #ff9f43;
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            display: none; /* Gizli */
+            opacity: 0;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transition: 0.3s;
+            z-index: 20;
+        }
+
+        .modal.aktif {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal ul { padding-left: 20px; line-height: 1.6; color: #ccc; font-size: 0.9rem; }
+        
         .kapat-btn {
             background: #ff4757;
-            border: none;
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            font-size: 0.8rem;
         }
+
     </style>
 </head>
 
-<body style="margin:0; overflow:hidden; background:black;">
+<body>
 
-    <div id="arayuz-katmani">
+    <div id="ui-layer">
         
-        <div id="bilgi-kutusu" class="aktif-buton">
-            <h3 style="margin:0 0 10px 0; color:#ff9f43;">🚀 Eğitim İçeriği</h3>
-            <p>Bu 3D nesne, eğitimde AR/VR kullanımını simgelemektedir.</p>
-            <p style="font-size:0.9rem; color:#ccc;">Detaylar için panele tıklayın.</p>
-            <button class="kapat-btn" onclick="kutuKapat()">Kapat</button>
+        <div class="header">
+            <h1>Eğitmen Portalı</h1>
+            <p>Bilişim & Maker Kültürü</p>
+        </div>
+
+        <div class="menu-grid">
+            <div class="menu-btn" onclick="modalAc('modal-maker')">
+                <i class="fa-solid fa-cube"></i>
+                <span>3D & Maker</span>
+            </div>
+            <div class="menu-btn" onclick="modalAc('modal-robot')">
+                <i class="fa-solid fa-microchip"></i>
+                <span>Robotik</span>
+            </div>
+            <div class="menu-btn" onclick="modalAc('modal-code')">
+                <i class="fa-solid fa-code"></i>
+                <span>Yazılım</span>
+            </div>
+            <div class="menu-btn" onclick="modalAc('modal-hack')">
+                <i class="fa-solid fa-trophy"></i>
+                <span>Hackoutlon</span>
+            </div>
         </div>
 
     </div>
 
+    <div id="modal-maker" class="modal">
+        <h2>🧊 Tasarım ve Üretim</h2>
+        <ul>
+            <li><b>Tinkercad:</b> Basit geometrik şekillerle modelleme.</li>
+            <li><b>3D Kalem:</b> Yaratıcılığı somutlaştıran ilk adım.</li>
+            <li><b>Fusion 360:</b> İleri seviye parametrik tasarım.</li>
+        </ul>
+        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
+    </div>
+
+    <div id="modal-robot" class="modal">
+        <h2>🤖 Robotik & IoT</h2>
+        <ul>
+            <li><b>Arduino:</b> Sensörler ve aktüatörlerle fiziksel kodlama.</li>
+            <li><b>VEX Robotics:</b> Turnuva odaklı robot mekaniği.</li>
+            <li><b>Akıllı Ev:</b> IoT sistemleri ve otomasyon temelleri.</li>
+        </ul>
+        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
+    </div>
+
+    <div id="modal-code" class="modal">
+        <h2>💻 Yazılım Geliştirme</h2>
+        <ul>
+            <li><b>Python:</b> Yapay zeka ve veri işleme.</li>
+            <li><b>Unity:</b> Oyun geliştirme ve VR dünyaları.</li>
+            <li><b>Mobil:</b> App Inventor ile uygulama geliştirme.</li>
+        </ul>
+        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
+    </div>
+
+    <div id="modal-hack" class="modal">
+        <h2>🏆 Hackoutlon</h2>
+        <p>Kodlama ve Yaratıcılık Maratonu!</p>
+        <ul>
+            <li>Takım kurma ve fikir geliştirme.</li>
+            <li>Sınırlı sürede prototip üretimi.</li>
+            <li>Jüri sunumu ve ödül töreni.</li>
+        </ul>
+        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
+    </div>
+
+
     <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
 
-        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
-        <a-light type="directional" position="2 4 3" intensity="1.2"></a-light>
-        <a-light type="point" position="-2 2 2" intensity="0.5" color="#ff9f43"></a-light>
+        <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
+        <a-light type="directional" position="2 4 3" intensity="1"></a-light>
+        <a-light type="point" position="-2 2 2" intensity="0.8" color="#ff9f43" distance="10"></a-light>
 
         <a-assets>
             <a-asset-item id="kupu" src="egitim_kupu_kucuk.glb"></a-asset-item>
@@ -83,9 +195,9 @@
             id="nesne"
             class="tiklanabilir" 
             gltf-model="#kupu"
-            position="0 1 -4" 
+            position="0 1.2 -4" 
             scale="0.5 0.5 0.5"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
+            animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
         </a-entity>
 
         <a-camera position="0 1.6 0"></a-camera>
@@ -93,24 +205,22 @@
     </a-scene>
 
     <script>
-        const nesne = document.getElementById('nesne');
-        const kutu = document.getElementById('bilgi-kutusu');
-
-        // Nesneye tıklandığında çalışır
-        nesne.addEventListener('click', function() {
-            kutu.style.display = 'block';
-            
-            // Tıklayınca nesne biraz büyüsün (Geri bildirim)
-            nesne.setAttribute('scale', '0.6 0.6 0.6');
-            setTimeout(() => {
-                nesne.setAttribute('scale', '0.5 0.5 0.5');
-            }, 200);
-        });
-
-        // Kutuyu kapatma fonksiyonu
-        function kutuKapat() {
-            kutu.style.display = 'none';
+        // Tüm modalları kapatan fonksiyon
+        function modalKapat() {
+            const modallar = document.querySelectorAll('.modal');
+            modallar.forEach(m => m.classList.remove('aktif'));
         }
+
+        // İlgili modalı açan fonksiyon
+        function modalAc(id) {
+            modalKapat(); // Önce açık olan varsa kapat
+            document.getElementById(id).classList.add('aktif');
+        }
+
+        // 3D Küpe tıklanınca rastgele bir menü açsın (Eğlence)
+        document.querySelector('#nesne').addEventListener('click', function() {
+            modalAc('modal-hack'); // Örnek olarak Hackoutlon'u açar
+        });
     </script>
 
 </body>
