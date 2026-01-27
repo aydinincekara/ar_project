@@ -1,73 +1,64 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <title>Bilişim Eğitimi AR</title>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <meta charset="utf-8">
+    <title>3D Eğitim Portalı</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <style>
+        /* ARAYÜZ KATMANI (UI) 
+           Tüm butonlar ve yazılar bu katmanda olacak.
+           3D sahnenin üzerinde durması için z-index yüksek tutuldu.
+        */
+        #arayuz-katmani {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Tıklamalar arkadaki 3D sahneye geçsin diye */
+            z-index: 9999;
+        }
+
+        /* Tıklanabilir butonlar için pointer-events açılır */
+        .aktif-buton {
+            pointer-events: auto; 
+        }
+
+        /* Bilgi Kutusu Tasarımı */
+        #bilgi-kutusu {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid rgba(255, 159, 67, 0.5); /* Turuncu Çerçeve */
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+            display: none; /* Başlangıçta gizli */
+            min-width: 250px;
+            box-shadow: 0 0 20px rgba(255, 159, 67, 0.2);
+        }
+
+        /* Kapat Butonu */
+        .kapat-btn {
+            background: #ff4757;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+    </style>
 </head>
 
 <body style="margin:0; overflow:hidden; background:black;">
 
-<div id="bilgi"
-     style="
-       position: fixed;
-       bottom: 20px;
-       left: 50%;
-       transform: translateX(-50%);
-       background: rgba(255, 255, 255, 0.1);
-       backdrop-filter: blur(10px);
-       border: 1px solid rgba(255,255,255,0.2);
-       color: white;
-       padding: 20px 30px;
-       border-radius: 20px;
-       font-family: 'Segoe UI', sans-serif;
-       display: none;
-       z-index: 9999;
-       text-align: center;
-       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-       min-width: 200px;
-     ">
-  <h3 style="margin:0 0 5px 0; color:#ff9f43;">Tebrikler! 🚀</h3>
-  Bu eğitimde<br>
-  <b>AR – VR – Maker – 3D Tasarım</b><br>
-  birlikte üretilecek.
-</div>
-
-<a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
-
-  <a-light type="ambient" color="#FFFFFF" intensity="0.5"></a-light>
-  <a-light type="directional" position="1 1 1" intensity="1"></a-light>
-
-  <a-assets>
-    <a-asset-item id="kupu" src="egitim_kupu.glb"></a-asset-item>
-  </a-assets>
-
-  <a-entity
-    id="kupuEntity"
-    class="tiklanabilir"
-    gltf-model="#kupu"
-    position="0 1 -4"
-    scale="0.5 0.5 0.5"
-    animation="property: rotation; to: 0 360 0; loop: true; dur: 9000; easing: linear">
-  </a-entity>
-
-  <a-camera position="0 1.6 0"></a-camera>
-
-</a-scene>
-
-<script>
-  const kupu = document.querySelector('#kupuEntity');
-  const bilgi = document.getElementById('bilgi');
-
-  // Küpe tıklandığında (veya dokunulduğunda) çalışır
-  kupu.addEventListener('click', function () {
-    // Yazıyı görünür yap
-    bilgi.style.display = 'block';
-    
-    // İsteğe bağlı: Tıklandığını belli etmek için küpü biraz büyütüp küçültelim
-    kupu.setAttribute('animation__click', 'property: scale; from: 0.6 0.6 0.6; to: 0.5 0.5 0.5; dur: 200; easing: easeOutQuad');
-  });
-</script>
-
-</body>
-</html>
+    <div id="arayuz-katmani">
+        
+        <div id="bilgi-kutusu" class="aktif-buton">
+            <h3
