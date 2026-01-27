@@ -8,88 +8,110 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
-        // --- ÖZEL BİLEŞEN: SÜRÜKLE VE FIRLAT (INERTIA) ---
-        AFRAME.registerComponent('surukle-cevir', {
-            schema: { speed: { default: 1.5 }, friction: { default: 0.95 } },
+        // --- GELİŞTİRİLMİŞ SÜRÜKLEME VE TIKLAMA MOTORU ---
+        AFRAME.registerComponent('akilli-kontrol', {
+            schema: { speed: { default: 2.5 }, friction: { default: 0.92 } },
             init: function () {
                 this.ifMouseDown = false;
                 this.x_cord = 0;
                 this.y_cord = 0;
                 this.velocityX = 0;
                 this.velocityY = 0;
+                
+                // Tıklama vs Sürükleme ayrımı için değişkenler
+                this.startX = 0;
+                this.startY = 0;
+                this.isDragging = false; 
 
-                // Masaüstü (Mouse) Olayları
-                document.addEventListener('mousedown', this.onStart.bind(this));
-                document.addEventListener('mouseup', this.onEnd.bind(this));
-                document.addEventListener('mousemove', this.onMove.bind(this));
+                // Event Listener'ları bağla
+                this.onStart = this.onStart.bind(this);
+                this.onEnd = this.onEnd.bind(this);
+                this.onMove = this.onMove.bind(this);
 
-                // Mobil (Dokunmatik) Olayları
-                document.addEventListener('touchstart', this.onTouchStart.bind(this));
-                document.addEventListener('touchend', this.onEnd.bind(this));
-                document.addEventListener('touchmove', this.onTouchMove.bind(this));
+                // Hem Masaüstü hem Mobil için dinleyiciler
+                document.addEventListener('mousedown', this.onStart);
+                document.addEventListener('touchstart', (e) => this.onStart(e.touches[0]));
+                
+                document.addEventListener('mouseup', this.onEnd);
+                document.addEventListener('touchend', this.onEnd);
+                
+                document.addEventListener('mousemove', this.onMove);
+                document.addEventListener('touchmove', (e) => this.onMove(e.touches[0]));
             },
-            
-            // Dokunma Başladı
+
             onStart: function (e) {
-                if(e.target.closest('.modal')) return; // Modala tıklarsa küpü elleme
+                // Eğer menü butonlarına basıldıysa 3D'yi elleme
+                if(e.target && e.target.closest && (e.target.closest('.modal') || e.target.closest('.menu-btn'))) return;
+
                 this.ifMouseDown = true;
                 this.x_cord = e.clientX;
                 this.y_cord = e.clientY;
-                this.velocityX = 0; // Tıklayınca dönmeyi durdur
-                this.velocityY = 0;
-            },
-            onTouchStart: function (e) {
-                if(e.target.closest('.modal')) return;
-                this.ifMouseDown = true;
-                this.x_cord = e.touches[0].clientX;
-                this.y_cord = e.touches[0].clientY;
+                
+                // Tıklama kontrolü için başlangıç noktasını kaydet
+                this.startX = e.clientX;
+                this.startY = e.clientY;
+                this.isDragging = false; // Henüz sürüklemedik varsayıyoruz
+
+                // Tutunca dönmeyi durdur
                 this.velocityX = 0;
                 this.velocityY = 0;
             },
 
-            // Dokunma Bitti
+            onMove: function (e) {
+                if (this.ifMouseDown) {
+                    var currentX = e.clientX;
+                    var currentY = e.clientY;
+
+                    // Hareket miktarını hesapla
+                    var diffX = currentX - this.startX;
+                    var diffY = currentY - this.startY;
+
+                    // Eğer 5 pikselden fazla hareket varsa, bu artık bir SÜRÜKLEMEDİR
+                    if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
+                        this.isDragging = true;
+                    }
+
+                    var temp_x = currentX - this.x_cord;
+                    var temp_y = currentY - this.y_cord;
+
+                    this.velocityY = temp_x * this.data.speed / 200; // Yavaşlatılmış hassasiyet
+                    this.velocityX = temp_y * this.data.speed / 200;
+
+                    this.x_cord = currentX;
+                    this.y_cord = currentY;
+                }
+            },
+
             onEnd: function () {
+                // Eğer fare bırakıldıysa ve hiç sürükleme olmadıysa (isDragging = false)
+                // Bu bir TIKLAMADIR!
+                if (this.ifMouseDown && !this.isDragging) {
+                    // Modal'ı açma kodunu tetikle
+                    modalAc('modal-hack'); // Varsayılan olarak Hackoutlon veya bilgi menüsü
+                }
                 this.ifMouseDown = false;
             },
 
-            // Sürükleme Anı
-            onMove: function (e) {
-                if (this.ifMouseDown) {
-                    var temp_x = e.clientX - this.x_cord;
-                    var temp_y = e.clientY - this.y_cord;
-
-                    // Hızı hesapla
-                    this.velocityY = temp_x * this.data.speed / 100;
-                    this.velocityX = temp_y * this.data.speed / 100;
-
-                    this.x_cord = e.clientX;
-                    this.y_cord = e.clientY;
-                }
-            },
-            onTouchMove: function (e) {
-                if (this.ifMouseDown) {
-                    var temp_x = e.touches[0].clientX - this.x_cord;
-                    var temp_y = e.touches[0].clientY - this.y_cord;
-
-                    this.velocityY = temp_x * this.data.speed / 100;
-                    this.velocityX = temp_y * this.data.speed / 100;
-
-                    this.x_cord = e.touches[0].clientX;
-                    this.y_cord = e.touches[0].clientY;
-                }
-            },
-
-            // Her karede (frame) çalışır: Animasyon Döngüsü
             tick: function () {
-                // Eğer tutmuyorsak yavaş yavaş dursun (Sürtünme)
                 if (!this.ifMouseDown) {
+                    // Sürtünme etkisi
                     this.velocityX *= this.data.friction;
                     this.velocityY *= this.data.friction;
+                    
+                    // Nesneyi döndür
+                    this.el.object3D.rotation.y += this.velocityY;
+                    this.el.object3D.rotation.x += this.velocityX;
                 }
-
-                // Hızı nesneye uygula
-                this.el.object3D.rotation.y += this.velocityY;
-                this.el.object3D.rotation.x += this.velocityX;
+            },
+            
+            remove: function() {
+                // Temizlik (Sayfa değişirse eventler şişmesin)
+                document.removeEventListener('mousedown', this.onStart);
+                document.removeEventListener('touchstart', this.onStart);
+                document.removeEventListener('mouseup', this.onEnd);
+                document.removeEventListener('touchend', this.onEnd);
+                document.removeEventListener('mousemove', this.onMove);
+                document.removeEventListener('touchmove', this.onMove);
             }
         });
     </script>
@@ -97,14 +119,13 @@
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         
-        /* Arayüz Katmanı */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10;
             display: flex; flex-direction: column; justify-content: space-between;
             padding: 20px; box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
-            pointer-events: none; /* ÖNEMLİ: Dokunuşları arkaya geçirir */
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0), rgba(0,0,0,0.9));
+            pointer-events: none; /* Dokunuşları arkaya geçirir */
         }
 
         .header { text-align: center; color: white; margin-top: 20px; pointer-events: none; }
@@ -118,7 +139,7 @@
             border: 1px solid rgba(255,255,255,0.2); border-radius: 15px;
             padding: 20px; text-align: center; color: white;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
-            pointer-events: auto; /* Sadece butonlar tutulabilir */
+            pointer-events: auto; /* Butonlar tıklanabilir */
             transition: 0.2s;
         }
         .menu-btn:active { transform: scale(0.95); background: rgba(255, 159, 67, 0.2); }
@@ -142,7 +163,8 @@
     <div id="ui-layer">
         <div class="header">
             <h1>Eğitmen Portalı</h1>
-            <p>Çevirmek için sürükleyin</p> </div>
+            <p>Modeli İncelemek İçin Sürükleyin</p>
+        </div>
 
         <div class="menu-grid">
             <div class="menu-btn" onclick="modalAc('modal-maker')"><i class="fa-solid fa-cube"></i><span>Maker</span></div>
@@ -152,12 +174,12 @@
         </div>
     </div>
 
-    <div id="modal-maker" class="modal"><h2>🧊 Maker</h2><ul><li>Tinkercad</li><li>3D Yazıcı</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
-    <div id="modal-robot" class="modal"><h2>🤖 Robotik</h2><ul><li>Arduino</li><li>VEX IQ</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
-    <div id="modal-code" class="modal"><h2>💻 Yazılım</h2><ul><li>Python</li><li>Unity</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
-    <div id="modal-hack" class="modal"><h2>🏆 Hackoutlon</h2><p>Kodlama Maratonu!</p><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-maker" class="modal"><h2>🧊 Maker & 3D</h2><ul><li>Tinkercad</li><li>3D Baskı</li><li>Fusion 360</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-robot" class="modal"><h2>🤖 Robotik</h2><ul><li>Arduino</li><li>VEX IQ</li><li>Sensörler</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-code" class="modal"><h2>💻 Yazılım</h2><ul><li>Python</li><li>Unity</li><li>Mobil App</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-hack" class="modal"><h2>🏆 Hackoutlon</h2><p><b>Eğitim İçeriği:</b><br>Takımlar belirlenen sürede proje geliştirir.</p><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
 
-    <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
+    <a-scene background="color: black">
         
         <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
         <a-light type="directional" position="2 4 3" intensity="1"></a-light>
@@ -168,12 +190,16 @@
         </a-assets>
 
         <a-entity 
-            id="nesne"
-            class="tiklanabilir" 
-            gltf-model="#kupu"
+            id="rotator-wrapper" 
             position="0 1.2 -4" 
-            scale="0.5 0.5 0.5"
-            surukle-cevir="speed: 2; friction: 0.95">
+            akilli-kontrol="speed: 2; friction: 0.95">
+
+            <a-entity 
+                gltf-model="#kupu" 
+                scale="0.5 0.5 0.5"
+                position="0 0 0"> 
+            </a-entity>
+            
         </a-entity>
 
         <a-camera position="0 1.6 0"></a-camera>
@@ -183,12 +209,6 @@
     <script>
         function modalKapat() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif')); }
         function modalAc(id) { modalKapat(); document.getElementById(id).classList.add('aktif'); }
-        // Küpe tıklayınca yine Hackoutlon açsın
-        document.querySelector('#nesne').addEventListener('click', function(e) {
-            // Eğer sürükleme yapmıyorsa (sadece tıkladıysa) aç
-            // Bu kontrolü basit tutmak için direkt açıyoruz
-            // modalAc('modal-hack'); 
-        });
     </script>
 
 </body>
