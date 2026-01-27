@@ -3,113 +3,137 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bilişim Eğitmen Portalı</title>
+    <title>3D Eğitim Portalı</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <style>
-        /* --- CSS AYARLARI --- */
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    <script>
+        // --- ÖZEL BİLEŞEN: SÜRÜKLE VE FIRLAT (INERTIA) ---
+        AFRAME.registerComponent('surukle-cevir', {
+            schema: { speed: { default: 1.5 }, friction: { default: 0.95 } },
+            init: function () {
+                this.ifMouseDown = false;
+                this.x_cord = 0;
+                this.y_cord = 0;
+                this.velocityX = 0;
+                this.velocityY = 0;
 
-        /* Ana Katman */
-        #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+                // Masaüstü (Mouse) Olayları
+                document.addEventListener('mousedown', this.onStart.bind(this));
+                document.addEventListener('mouseup', this.onEnd.bind(this));
+                document.addEventListener('mousemove', this.onMove.bind(this));
+
+                // Mobil (Dokunmatik) Olayları
+                document.addEventListener('touchstart', this.onTouchStart.bind(this));
+                document.addEventListener('touchend', this.onEnd.bind(this));
+                document.addEventListener('touchmove', this.onTouchMove.bind(this));
+            },
             
-            /* KRİTİK AYAR: Bu katmana dokunulamaz, dokunuşlar arkaya geçer */
-            pointer-events: none; 
+            // Dokunma Başladı
+            onStart: function (e) {
+                if(e.target.closest('.modal')) return; // Modala tıklarsa küpü elleme
+                this.ifMouseDown = true;
+                this.x_cord = e.clientX;
+                this.y_cord = e.clientY;
+                this.velocityX = 0; // Tıklayınca dönmeyi durdur
+                this.velocityY = 0;
+            },
+            onTouchStart: function (e) {
+                if(e.target.closest('.modal')) return;
+                this.ifMouseDown = true;
+                this.x_cord = e.touches[0].clientX;
+                this.y_cord = e.touches[0].clientY;
+                this.velocityX = 0;
+                this.velocityY = 0;
+            },
+
+            // Dokunma Bitti
+            onEnd: function () {
+                this.ifMouseDown = false;
+            },
+
+            // Sürükleme Anı
+            onMove: function (e) {
+                if (this.ifMouseDown) {
+                    var temp_x = e.clientX - this.x_cord;
+                    var temp_y = e.clientY - this.y_cord;
+
+                    // Hızı hesapla
+                    this.velocityY = temp_x * this.data.speed / 100;
+                    this.velocityX = temp_y * this.data.speed / 100;
+
+                    this.x_cord = e.clientX;
+                    this.y_cord = e.clientY;
+                }
+            },
+            onTouchMove: function (e) {
+                if (this.ifMouseDown) {
+                    var temp_x = e.touches[0].clientX - this.x_cord;
+                    var temp_y = e.touches[0].clientY - this.y_cord;
+
+                    this.velocityY = temp_x * this.data.speed / 100;
+                    this.velocityX = temp_y * this.data.speed / 100;
+
+                    this.x_cord = e.touches[0].clientX;
+                    this.y_cord = e.touches[0].clientY;
+                }
+            },
+
+            // Her karede (frame) çalışır: Animasyon Döngüsü
+            tick: function () {
+                // Eğer tutmuyorsak yavaş yavaş dursun (Sürtünme)
+                if (!this.ifMouseDown) {
+                    this.velocityX *= this.data.friction;
+                    this.velocityY *= this.data.friction;
+                }
+
+                // Hızı nesneye uygula
+                this.el.object3D.rotation.y += this.velocityY;
+                this.el.object3D.rotation.x += this.velocityX;
+            }
+        });
+    </script>
+
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        
+        /* Arayüz Katmanı */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 20px; box-sizing: border-box;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+            pointer-events: none; /* ÖNEMLİ: Dokunuşları arkaya geçirir */
         }
 
-        /* Başlık */
-        .header {
-            text-align: center;
-            color: white;
-            margin-top: 20px;
-            /* Başlığa da dokunulamaz, arkasındaki sahne dönsün */
-            pointer-events: none; 
-        }
-        .header h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; color: #ff9f43; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .header { text-align: center; color: white; margin-top: 20px; pointer-events: none; }
+        .header h1 { margin: 0; font-size: 1.5rem; color: #ff9f43; text-transform: uppercase; }
         .header p { margin: 5px 0; font-size: 0.8rem; color: #aaa; }
 
-        /* Menü Izgarası */
-        .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-            /* Izgara kutusunun kendisine dokunulamaz, aralardan dokunuş geçsin */
-            pointer-events: none; 
-        }
-
-        /* Menü Butonları */
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; pointer-events: none; }
+        
         .menu-btn {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            
-            /* SADECE BUTONLAR TIKLANABİLİR OLSUN */
-            pointer-events: auto; 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 15px;
+            padding: 20px; text-align: center; color: white;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            pointer-events: auto; /* Sadece butonlar tutulabilir */
+            transition: 0.2s;
         }
-
         .menu-btn:active { transform: scale(0.95); background: rgba(255, 159, 67, 0.2); }
         .menu-btn i { font-size: 1.5rem; color: #ff9f43; }
-        .menu-btn span { font-size: 0.9rem; font-weight: bold; }
 
-        /* Modal Pencereler */
         .modal {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            width: 85%;
-            max-width: 400px;
-            background: rgba(20, 20, 25, 0.95);
-            border: 1px solid #ff9f43;
-            border-radius: 15px;
-            padding: 25px;
-            color: white;
-            display: none; 
-            opacity: 0;
-            
-            /* Modal açılınca ona dokunabilelim */
-            pointer-events: auto; 
-            
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            transition: 0.3s;
-            z-index: 20;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 85%; max-width: 400px; background: rgba(20, 20, 25, 0.95);
+            border: 1px solid #ff9f43; border-radius: 15px; padding: 25px; color: white;
+            display: none; opacity: 0; pointer-events: auto; z-index: 20; transition: 0.3s;
         }
-
         .modal.aktif { display: block; opacity: 1; transform: translate(-50%, -50%) scale(1); }
         .modal h2 { margin-top: 0; color: #ff9f43; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .modal ul { padding-left: 20px; line-height: 1.6; color: #ccc; font-size: 0.9rem; }
-        
-        .kapat-btn {
-            background: #ff4757;
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        .modal ul { padding-left: 20px; color: #ccc; }
+        .kapat-btn { background: #ff4757; color: white; border: none; width: 100%; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 
@@ -118,69 +142,20 @@
     <div id="ui-layer">
         <div class="header">
             <h1>Eğitmen Portalı</h1>
-            <p>Bilişim & Maker Kültürü</p>
-        </div>
+            <p>Çevirmek için sürükleyin</p> </div>
 
         <div class="menu-grid">
-            <div class="menu-btn" onclick="modalAc('modal-maker')">
-                <i class="fa-solid fa-cube"></i>
-                <span>3D & Maker</span>
-            </div>
-            <div class="menu-btn" onclick="modalAc('modal-robot')">
-                <i class="fa-solid fa-microchip"></i>
-                <span>Robotik</span>
-            </div>
-            <div class="menu-btn" onclick="modalAc('modal-code')">
-                <i class="fa-solid fa-code"></i>
-                <span>Yazılım</span>
-            </div>
-            <div class="menu-btn" onclick="modalAc('modal-hack')">
-                <i class="fa-solid fa-trophy"></i>
-                <span>Hackoutlon</span>
-            </div>
+            <div class="menu-btn" onclick="modalAc('modal-maker')"><i class="fa-solid fa-cube"></i><span>Maker</span></div>
+            <div class="menu-btn" onclick="modalAc('modal-robot')"><i class="fa-solid fa-microchip"></i><span>Robotik</span></div>
+            <div class="menu-btn" onclick="modalAc('modal-code')"><i class="fa-solid fa-code"></i><span>Yazılım</span></div>
+            <div class="menu-btn" onclick="modalAc('modal-hack')"><i class="fa-solid fa-trophy"></i><span>Hackoutlon</span></div>
         </div>
     </div>
 
-    <div id="modal-maker" class="modal">
-        <h2>🧊 Tasarım ve Üretim</h2>
-        <ul>
-            <li><b>Tinkercad:</b> Basit geometrik modelleme.</li>
-            <li><b>3D Kalem:</b> Somutlaştırma atölyesi.</li>
-            <li><b>Fusion 360:</b> Parametrik tasarım.</li>
-        </ul>
-        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
-    </div>
-
-    <div id="modal-robot" class="modal">
-        <h2>🤖 Robotik & IoT</h2>
-        <ul>
-            <li><b>Arduino:</b> Sensörler ve kodlama.</li>
-            <li><b>VEX IQ:</b> Robot mekaniği.</li>
-            <li><b>IoT:</b> Akıllı ev sistemleri.</li>
-        </ul>
-        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
-    </div>
-
-    <div id="modal-code" class="modal">
-        <h2>💻 Yazılım Geliştirme</h2>
-        <ul>
-            <li><b>Python:</b> Yapay zeka temelleri.</li>
-            <li><b>Unity:</b> Oyun ve simülasyon.</li>
-            <li><b>Mobil:</b> App Inventor.</li>
-        </ul>
-        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
-    </div>
-
-    <div id="modal-hack" class="modal">
-        <h2>🏆 Hackoutlon</h2>
-        <p>Kodlama ve Yaratıcılık Maratonu!</p>
-        <ul>
-            <li>Takım kurma ve fikir.</li>
-            <li>Prototip geliştirme.</li>
-            <li>Jüri sunumu.</li>
-        </ul>
-        <button class="kapat-btn" onclick="modalKapat()">Kapat</button>
-    </div>
+    <div id="modal-maker" class="modal"><h2>🧊 Maker</h2><ul><li>Tinkercad</li><li>3D Yazıcı</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-robot" class="modal"><h2>🤖 Robotik</h2><ul><li>Arduino</li><li>VEX IQ</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-code" class="modal"><h2>💻 Yazılım</h2><ul><li>Python</li><li>Unity</li></ul><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
+    <div id="modal-hack" class="modal"><h2>🏆 Hackoutlon</h2><p>Kodlama Maratonu!</p><button class="kapat-btn" onclick="modalKapat()">Kapat</button></div>
 
     <a-scene background="color: black" cursor="rayOrigin: mouse" raycaster="objects: .tiklanabilir">
         
@@ -198,25 +173,21 @@
             gltf-model="#kupu"
             position="0 1.2 -4" 
             scale="0.5 0.5 0.5"
-            animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+            surukle-cevir="speed: 2; friction: 0.95">
         </a-entity>
 
-        <a-camera position="0 1.6 0" look-controls="enabled: true"></a-camera>
+        <a-camera position="0 1.6 0"></a-camera>
 
     </a-scene>
 
     <script>
-        function modalKapat() {
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif'));
-        }
-        function modalAc(id) {
-            modalKapat();
-            document.getElementById(id).classList.add('aktif');
-        }
-        
-        // Küpe tıklayınca da Hackoutlon açsın (Örnek etkileşim)
-        document.querySelector('#nesne').addEventListener('click', function() {
-            modalAc('modal-hack');
+        function modalKapat() { document.querySelectorAll('.modal').forEach(m => m.classList.remove('aktif')); }
+        function modalAc(id) { modalKapat(); document.getElementById(id).classList.add('aktif'); }
+        // Küpe tıklayınca yine Hackoutlon açsın
+        document.querySelector('#nesne').addEventListener('click', function(e) {
+            // Eğer sürükleme yapmıyorsa (sadece tıkladıysa) aç
+            // Bu kontrolü basit tutmak için direkt açıyoruz
+            // modalAc('modal-hack'); 
         });
     </script>
 
